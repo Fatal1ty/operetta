@@ -37,7 +37,10 @@ class DIService(Service):
             for provider in providers:
                 for factory in provider.factories:
                     if factory.scope is Scope.APP:
-                        await container.get(factory.provides.type_hint)
+                        await container.get(
+                            dependency_type=factory.provides.type_hint,
+                            component=provider.component,
+                        )
                     elif factory.scope is Scope.REQUEST:
                         async with container() as request_container:
                             with suppress(NoContextValueError):
