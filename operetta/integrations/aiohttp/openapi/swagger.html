@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="SwaggerUI"
+  />
+  <title>SwaggerUI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.27.1/swagger-ui.css" integrity="sha384-++DMKo1369T5pxDNqojF1F91bYxYiT1N7b1M15a7oCzEodfljztKlApQoH6eQSKI" crossorigin="anonymous">
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5.27.1/swagger-ui-bundle.js" integrity="sha384-5pEDYOWQic3ejKOvYt1kQ5QWoglLXBxyqM5/7vL8NrQW4YHiKCswfiHxxBp77KJN" crossorigin="anonymous"></script>
+<script>
+  window.onload = () => {
+    window.ui = SwaggerUIBundle({
+      url: '/static/openapi/openapi.yaml',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      filter: true,
+      defaultModelsExpandDepth: 0,
+    });
+  };
+</script>
+</body>
+</html>
