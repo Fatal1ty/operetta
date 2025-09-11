@@ -12,7 +12,6 @@ from operetta.service.di import DIService
 
 
 class Application:
-
     def __init__(
         self,
         *services: aiomisc.Service,
@@ -32,7 +31,13 @@ class Application:
             "--config",
             type=Path,
             required=True,
-            help="Path to the configuration file.",
+            help="Path to the configuration file",
+        )
+        parser.add_argument(
+            "--log-level",
+            type=str,
+            default="debug",
+            help="Logging level",
         )
 
         args = parser.parse_args()
@@ -45,6 +50,7 @@ class Application:
 
         async def start_services():
             entrypoint = aiomisc.entrypoint.get_current()
+            aiomisc.log.basic_config(args.log_level)
             services = [
                 ConfigurationService(args.config),
                 DIService(

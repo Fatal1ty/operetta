@@ -17,6 +17,10 @@ from dishka.integrations.aiohttp import (
     container_middleware,
 )
 
+from operetta.integrations.aiohttp.middlewares import (
+    ddd_errors_middleware,
+    unhandled_error_middleware,
+)
 from operetta.integrations.aiohttp.openapi.builder import rebuild_spec
 from operetta.integrations.aiohttp.route_processing import (
     process_route,
@@ -44,6 +48,10 @@ class AIOHTTPService(Service, BaseAIOHTTPService):
         self,
         routes: Iterable[RouteDef],
         middlewares: Iterable[Middleware] = (),
+        system_middlewares: Iterable[Middleware] = (
+            unhandled_error_middleware,
+            ddd_errors_middleware,
+        ),
         static_endpoint_prefix: str = "/static/",
         static_files_root: Path | None = None,
         docs_default_path: str = "/docs",
@@ -59,7 +67,7 @@ class AIOHTTPService(Service, BaseAIOHTTPService):
     ):
         super().__init__(**kwargs)
         self._routes = routes
-        self._middlewares = middlewares
+        self._middlewares = [*system_middlewares, *middlewares]
         self._docs_default_path = docs_default_path
         self._docs_swagger_path = docs_swagger_path
         self._docs_redoc_path = docs_redoc_path

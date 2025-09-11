@@ -9,7 +9,7 @@ class APIError(Exception):
 
     def __init__(self, *args, details: Sequence[str] = ()):
         super().__init__(*args)
-        self.details = details
+        self.details = details or self.details
 
     @property
     def message(self) -> str:
@@ -45,3 +45,36 @@ class ResourceNotFoundError(ClientError):
     status = 404
     code = "RESOURCE_NOT_FOUND"
     message_format = "Resource not found"
+    details = [
+        {
+            "suggestion": (
+                "Ensure the resource identifier is correct "
+                "or the resource exists"
+            )
+        }
+    ]
+
+
+class ConflictError(ClientError):
+    status = 409
+    code = "CONFLICT"
+    message_format = "Conflict"
+
+
+class DuplicateRequestError(ConflictError):
+    code = "DUPLICATE_RESOURCE"
+    message_format = "Duplicate resource"
+    details = [{"suggestion": "Ensure the resource does not already exist"}]
+
+
+class UnprocessableEntityError(ClientError):
+    status = 422
+    code = "UNPROCESSABLE_ENTITY"
+    message_format = "Unprocessable entity"
+    details = [
+        {
+            "suggestion": (
+                "Ensure the request data meets all required constraints"
+            )
+        }
+    ]

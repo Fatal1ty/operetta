@@ -34,6 +34,7 @@ def error_response(
 class ErrorSchema:
     message: str
     code: str
+    details: Sequence[Any]
 
 
 @dataclass
