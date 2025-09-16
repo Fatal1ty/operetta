@@ -11,6 +11,18 @@ from operetta.ddd.domain.errors import (
     EntityNotFoundError,
     ValidationError,
 )
+from operetta.ddd.infrastructure.errors import (
+    DeadlineExceededError,
+    DependencyFailureError,
+    DependencyThrottledError,
+    DependencyUnavailableError,
+    InfrastructureError,
+    StorageIntegrityError,
+    SubsystemUnavailableError,
+    SystemResourceLimitExceededError,
+    TransportIntegrityError,
+    UnexpectedInfrastructureError,
+)
 from operetta.integrations.aiohttp import errors as http_errors
 from operetta.integrations.aiohttp.response import error_response
 
@@ -59,3 +71,15 @@ async def ddd_errors_middleware(
         raise http_errors.ConflictError(details=e.details)
     except ValidationError as e:
         raise http_errors.UnprocessableEntityError(details=e.details)
+    except DeadlineExceededError as e:
+        raise http_errors.GatewayTimeoutError(details=e.details)
+    except (DependencyUnavailableError, SubsystemUnavailableError) as e:
+        raise http_errors.ServiceUnavailableError(details=e.details)
+    except DependencyFailureError as e:
+        raise http_errors.BadGatewayError(details=e.details)
+    except (StorageIntegrityError, TransportIntegrityError) as e:
+        raise http_errors.ServerError(details=e.details)
+    except (SystemResourceLimitExceededError, DependencyThrottledError) as e:
+        raise http_errors.ServiceUnavailableError(details=e.details)
+    except (UnexpectedInfrastructureError, InfrastructureError) as e:
+        raise http_errors.ServerError(details=e.details)

@@ -78,3 +78,21 @@ class UnprocessableEntityError(ClientError):
             )
         }
     ]
+
+
+class BadGatewayError(ServerError):
+    status = 502
+    code = "BAD_GATEWAY"
+    message_format = "Bad Gateway"
+
+
+class ServiceUnavailableError(ServerError):
+    status = 503
+    code = "SERVICE_UNAVAILABLE"
+    message_format = "Service unavailable"
+
+
+class GatewayTimeoutError(ServerError):
+    status = 504
+    code = "GATEWAY_TIMEOUT"
+    message_format = "Gateway timeout"
