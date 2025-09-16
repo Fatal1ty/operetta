@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10,<4.0"
 dependencies = [
     "aiomisc (>=17.9.4,<18.0.0)",
-    "dishka (>=1.6.0,<2.0.0)",
+    "dishka (>=1.7.1,<2.0.0)",
     "pyyaml (>=6.0.2,<7.0.0)"
 ]
 
@@ -21,6 +21,7 @@ aiohttp = ["aiohttp (>=3.12.15,<4.0.0)", "openapify (>=0.7,<0.8)"]
 black = "^25.1.0"
 mypy = "^1.17.1"
 isort = "^6.0.1"
+types-pyyaml = "^6.0.12.20250915"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

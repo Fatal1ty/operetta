@@ -10,12 +10,7 @@ from aiohttp.typedefs import Middleware
 from aiohttp.web import Application
 from aiohttp.web_routedef import RouteDef
 from aiomisc.service.aiohttp import AIOHTTPService as BaseAIOHTTPService
-from dishka import AsyncContainer
-from dishka.integrations.aiohttp import (
-    DISHKA_CONTAINER_KEY,
-    _inject_routes,
-    container_middleware,
-)
+from dishka.integrations.aiohttp import setup_dishka
 
 from operetta.integrations.aiohttp.middlewares import (
     ddd_errors_middleware,
@@ -155,20 +150,8 @@ class AIOHTTPService(Service, BaseAIOHTTPService):
         """Set up DI integration for the app."""
         self._app_ready.set()
         setup_dishka(
-            await self.context["dishka_container"], app, auto_inject=True
+            await self.context["dishka_container"],
+            app,
+            auto_inject=True,
+            finalize_container=False,
         )
-
-
-def setup_dishka(
-    container: AsyncContainer,
-    app: Application,
-    *,
-    auto_inject: bool = False,
-) -> None:
-    # TODO: Remove after https://github.com/reagento/dishka/pull/532 or
-    #  https://github.com/reagento/dishka/pull/532 released
-    app[DISHKA_CONTAINER_KEY] = container
-    app.middlewares.append(container_middleware)
-
-    if auto_inject:
-        _inject_routes(app.router)
