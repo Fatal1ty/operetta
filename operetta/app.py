@@ -1,13 +1,9 @@
-import argparse
-import sys
-from pathlib import Path
 from typing import Iterable
 
 import aiomisc
-from aiomisc import get_context
+from aiomisc_log import LogLevel
 from dishka.provider import BaseProvider
 
-from operetta.service.configuration import ConfigurationService
 from operetta.service.di import DIService
 
 
@@ -18,49 +14,25 @@ class Application:
         di_providers: Iterable[BaseProvider],
         description: str | None = None,
         warmup_dependencies: bool = False,
-    ):
+        log_level: int | str = LogLevel.debug,
+        # TODO: add parameters passed to aiomisc.entrypoint
+    ) -> None:
         self.app_description = description
         self.services = list(services)
         self._di_providers = list(di_providers)
         self._warmup_dependencies = warmup_dependencies
+        self._log_level = log_level
 
     def run(self):
-        parser = argparse.ArgumentParser(description=self.app_description)
-        parser.add_argument(
-            "-c",
-            "--config",
-            type=Path,
-            required=True,
-            help="Path to the configuration file",
-        )
-        parser.add_argument(
-            "--log-level",
-            type=str,
-            default="debug",
-            help="Logging level",
-        )
-
-        args = parser.parse_args()
-
-        if not args.config.is_file():
-            sys.exit(
-                f"Error: Configuration file '{args.config}' does not exist "
-                f"or is not a file."
-            )
-
-        async def start_services():
-            entrypoint = aiomisc.entrypoint.get_current()
-            aiomisc.log.basic_config(args.log_level)
-            services = [
-                ConfigurationService(args.config),
-                DIService(
-                    *self._di_providers,
-                    warmup=self._warmup_dependencies,
-                ),
-            ] + self.services
-            get_context()["app"] = self
-            await entrypoint.start_services(*services)
-
-        with aiomisc.entrypoint() as loop:
-            loop.create_task(start_services())
+        services = [
+            DIService(
+                *self._di_providers,
+                app_services=self.services,
+                warmup=self._warmup_dependencies,
+            ),
+        ] + self.services
+        loop = aiomisc.new_event_loop()
+        with aiomisc.entrypoint(
+            loop=loop, log_level=self._log_level, *services
+        ) as loop:
             loop.run_forever()

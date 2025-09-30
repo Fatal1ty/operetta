@@ -21,3 +21,7 @@ lint:
 format:
     isort operetta
     black operetta
+    just --fmt --unstable
+
+test:
+    pytest -v --cov=operetta --cov-report=term-missing --cov-report=xml

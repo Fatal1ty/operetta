@@ -2,6 +2,7 @@ import asyncio
 import logging
 import shutil
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Iterable, Literal, Sequence
 
@@ -107,6 +108,10 @@ class AIOHTTPService(Service, BaseAIOHTTPService):
             )
         await self._setup_di(app)
         return app
+
+    async def stop(self, exception: Exception | None = None) -> None:
+        with suppress(AttributeError):
+            await super().stop(exception)
 
     def _get_system_routes(self) -> Iterable[RouteDef]:
         """Return system routes."""
