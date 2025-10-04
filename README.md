@@ -237,8 +237,8 @@ app = Application(config_service)
 
 Operetta provides a thin, uniform abstraction over PostgreSQL so your application code does not depend on a particular driver or pool manager. You write repositories and units of work against two interfaces:
 
-- `PostgresDatabaseAdapter` — reads and general statements (fetch, fetch_one, execute).
-- `PostgresTransactionDatabaseAdapter` — the same API plus explicit transaction control (start/commit/rollback) for write flows.
+- `PostgresDatabaseAdapter` — a general-purpose adapter for any operations (fetch, fetch_one, execute, ...) without explicit transaction control.
+- `PostgresTransactionDatabaseAdapter` — the same API for all operations plus transaction control methods (start/commit/rollback) when you need to run multiple steps in a single transaction.
 
 There are two interchangeable backends:
 - `asyncpg` — a straightforward single-pool setup.
@@ -249,17 +249,16 @@ Both backends expose the same interfaces via DI, so switching is configuration-o
 - `PostgresTransactionDatabaseAdapter` is provided with scope=REQUEST (per-request/operation handle for transactional work).
 
 Configuration is provided via DI:
-- Connection config types: `AsyncpgPostgresDatabaseConfig` (for asyncpg) and `AsyncpgHAPostgresDatabaseConfig` (for hasql/HA).
+- Connection config types: `AsyncpgPostgresDatabaseConfig` (for asyncpg) and `AsyncpgHAPostgresDatabaseConfig` (for asyncpg HA).
 - Pool factory kwargs type: `AsyncpgPoolFactoryKwargs` (to pass `init` or other pool options to the driver/manager).
 - Built-in config providers — `AsyncpgPostgresDatabaseConfigProvider` and `AsyncpgHAPostgresDatabaseConfigProvider` — read settings from `ApplicationDictConfig['postgres']`, which is loaded by `YAMLConfigurationService` from your YAML file.
-- Built-in database providers — `AsyncpgPostgresDatabaseProvider` and `AsyncpgHAPostgresDatabaseProvider` — create the pools, expose adapters in DI, and manage lifecycle.
 - A built-in pool kwargs provider returns an empty `AsyncpgPoolFactoryKwargs` by default; you can override it to customize connection initialization (see Advanced setup).
 
 Typical pattern:
-- Inject `PostgresDatabaseAdapter` into repositories for reads and simple statements.
-- For write operations, open a unit-of-work with `PostgresTransactionDatabaseAdapter`, call `start_transaction()`/`commit_transaction()` (or `rollback_transaction()` on error), and use the same adapter inside repos.
+- Use `PostgresDatabaseAdapter` when you don't need explicit transaction management: it's suitable for any reads and writes.
+- When you need transactional boundaries, get `PostgresTransactionDatabaseAdapter`, call `start_transaction()`/`commit_transaction()` (or `rollback_transaction()` on error), and run your operations within that transaction.
 
-Configuration is loaded from YAML (via `YAMLConfigurationService`) under the `postgres:` key. Optional connection initialization (e.g., custom codecs or `search_path`) can be provided through `AsyncpgPoolFactoryKwargs` in DI; this works for both `asyncpg` and `hasql` variants.
+Configuration can be loaded from YAML via `YAMLConfigurationService` under the `postgres:` key. Optional connection initialization (e.g., custom codecs or `search_path`) can be provided through `AsyncpgPoolFactoryKwargs` in DI; this works for both `asyncpg` and `hasql` variants.
 
 ### Single-node PostgreSQL (asyncpg)
 
@@ -269,9 +268,8 @@ Provides:
   - `AsyncpgPostgresDatabaseService` — pool and adapters,
   - `AsyncpgPostgresDatabaseConfigurationService` — loads config from `ApplicationDictConfig`.
 - Adapters:
-  - `PostgresDatabaseAdapter` — interface (fetch/fetch_one/execute,...),
-  - `PostgresTransactionDatabaseAdapter` — adds transactions (start/commit/rollback),
-  - asyncpg implementations: `AsyncpgPostgresDatabaseAdapter`, `AsyncpgPostgresTxDatabaseAdapter`.
+  - `PostgresDatabaseAdapter` with scope=APP — general-purpose adapter for any operations (fetch/fetch_one/execute, ...).
+  - `PostgresTransactionDatabaseAdapter` with scope=REQUEST (handy for HTTP requests) — same API plus transaction control methods (start/commit/rollback).
 
 YAML config example:
 
@@ -339,17 +337,18 @@ class UnitOfWork:
             await self._tx.commit_transaction()
 ```
 
-`AsyncpgPostgresDatabaseProvider` registers:
-- `PostgresDatabaseAdapter` with scope=APP,
-- `PostgresTransactionDatabaseAdapter` with scope=REQUEST (handy for HTTP requests).
-
 ### High-availability PostgreSQL cluster (hasql)
 
-If you run an HA cluster (multiple nodes), use the hasql integration:
+If you run an HA cluster (multiple nodes), use the hasql integration.
 
+Provides:
 - Providers: `AsyncpgHAPostgresDatabaseProvider`, `AsyncpgHAPostgresDatabaseConfigProvider`.
-- Services: `AsyncpgHAPostgresDatabaseService`, `AsyncpgHAPostgresDatabaseConfigurationService`.
-- Adapters: `AsyncpgHAPostgresDatabaseAdapter`, `AsyncpgHAPostgresTxDatabaseAdapter` (same interfaces as the asyncpg variant).
+- Convenience services to plug into `Application`:
+  - `AsyncpgHAPostgresDatabaseService` — pool and adapters,
+  - `AsyncpgHAPostgresDatabaseConfigurationService` — loads config from `ApplicationDictConfig`.
+- Adapters:
+  - `PostgresDatabaseAdapter` with scope=APP — general-purpose adapter for any operations (fetch/fetch_one/execute, ...).
+  - `PostgresTransactionDatabaseAdapter` with scope=REQUEST (handy for HTTP requests) — same API plus transaction control methods (start/commit/rollback).
 
 YAML config example:
 
@@ -358,7 +357,9 @@ postgres:
   user: app
   password: secret
   database: appdb
-  hosts: ["10.0.0.1:5432", "10.0.0.2:5432"]
+  hosts:
+    - 10.0.0.1:5432
+    - 10.0.0.2:5432
   min_masters: 1
   min_replicas: 1
   # optional:
@@ -371,9 +372,25 @@ postgres:
   stopwatch_window_size: 100
 ```
 
+Plug into the app:
+
+```python
+from operetta.app import Application
+from operetta.service.configuration import YAMLConfigurationService
+from operetta.integrations.asyncpg_ha.service import (
+    AsyncpgHAPostgresDatabaseService,
+    AsyncpgHAPostgresDatabaseConfigurationService,
+)
+
+app = Application(
+    YAMLConfigurationService(),
+    AsyncpgHAPostgresDatabaseConfigurationService(),
+    AsyncpgHAPostgresDatabaseService(),
+)
+```
+
 > [!TIP]\
-> Uses `hasql.asyncpg.PoolManager`: waits for masters/replicas, balances, and fails over.\
-> DI exposes the same adapter interfaces, so repository code stays unchanged.
+> DI exposes the same adapter interfaces, so repository and unit of work code stays unchanged.
 
 ### Advanced setup
 

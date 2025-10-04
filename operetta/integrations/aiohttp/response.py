@@ -3,7 +3,6 @@ from typing import Any, Generic, Mapping, Sequence, TypeVar
 
 import aiohttp.web
 
-
 T = TypeVar("T")
 
 
