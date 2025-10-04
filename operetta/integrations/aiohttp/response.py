@@ -4,6 +4,9 @@ from typing import Any, Generic, Mapping, Sequence, TypeVar
 import aiohttp.web
 
 
+T = TypeVar("T")
+
+
 def success_response(
     data: dict[str, Any] | list[Any] | None = None, status: int = 200
 ) -> aiohttp.web.Response:
@@ -38,14 +41,14 @@ class ErrorSchema:
 
 
 @dataclass
-class ResponseSchema[T]:
+class ResponseSchema(Generic[T]):
     success: bool
     data: T
     error: ErrorSchema | None
 
 
 @dataclass
-class SuccessResponse[T](ResponseSchema[T]):
+class SuccessResponse(ResponseSchema[T]):
     success: bool = True
     data: T = field(kw_only=True)
     error: None = None
