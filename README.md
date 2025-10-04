@@ -435,8 +435,13 @@ app = Application(
 ```
 
 > [!IMPORTANT]\
-> When you provide your own `AsyncpgPoolFactoryKwargs`, the provider method must be declared with `@provide(override=True)`. This overrides the built‑in default `AsyncpgPoolFactoryKwargs` provider.\
-> Without `override=True`, container validation may fail.
+> If you use the built-in `AsyncpgPostgresDatabaseConfigurationService` or
+> `AsyncpgHAPostgresDatabaseConfigurationService`, they already register a
+> default provider for `AsyncpgPoolFactoryKwargs`. To customize pool options,
+> declare your provider with `@provide(override=True)` so it overrides the
+> built-in one; otherwise container validation will fail.\
+> When you provide your own `AsyncpgPoolFactoryKwargs` and there is an existing
+> default provider from those services, `override=True` is mandatory.
 
 Define your own config providers (e.g., from environment variables) if you don't want to use YAML-based ones:
 
@@ -462,7 +467,7 @@ class EnvAsyncpgConfigProvider(Provider):
             password=os.getenv("PGPASSWORD"),
         )
 
-    @provide(override=True)
+    @provide
     def get_pool_factory_kwargs(self) -> AsyncpgPoolFactoryKwargs:
         return {}
 
@@ -501,13 +506,12 @@ class EnvHasqlConfigProvider(Provider):
             min_replicas=int(os.getenv("PG_MIN_REPLICAS", "1")),
         )
 
-    @provide(override=True)
+    @provide
     def get_pool_factory_kwargs(self) -> AsyncpgPoolFactoryKwargs:
         return {}
 
 
 app = Application(
-    AsyncpgHAPostgresDatabaseConfigurationService(),
     AsyncpgHAPostgresDatabaseService(),
     di_providers=[EnvHasqlConfigProvider()],
 )
