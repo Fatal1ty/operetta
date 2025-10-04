@@ -27,11 +27,11 @@ jobs:
           pip install poetry
           poetry install --all-extras
       - name: Run isort
-        run: isort --check --diff operetta
+        run: poetry run isort --check --diff operetta
       - name: Run black
-        run: black --check --diff operetta
+        run: poetry run black --check --diff operetta
       - name: Run mypy
-        run: mypy operetta
+        run: poetry run mypy operetta
 
   test-posix:
     name: Tests on Posix
@@ -53,12 +53,8 @@ jobs:
         run: |
           pip install poetry
           poetry install --all-extras
-      - name: Run isort
-        run: isort --check --diff operetta
-      - name: Run black
-        run: black --check --diff operetta
-      - name: Run mypy
-        run: mypy operetta
+      - name: Run pytest
+        run: poetry run pytest -q
 
   test-windows:
     name: Tests on Windows
@@ -80,9 +76,5 @@ jobs:
         run: |
           pip install poetry
           poetry install --all-extras
-      - name: Run isort
-        run: isort --check --diff operetta
-      - name: Run black
-        run: black --check --diff operetta
-      - name: Run mypy
-        run: mypy operetta
+      - name: Run pytest
+        run: poetry run pytest -q
