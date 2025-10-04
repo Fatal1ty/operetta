@@ -307,7 +307,10 @@ Use in a repository:
 
 ```python
 from dataclasses import dataclass
-from operetta.ddd.infrastructure.db.postgres.adapters.interface import PostgresDatabaseAdapter, PostgresTransactionDatabaseAdapter
+from operetta.ddd.infrastructure.db.postgres.adapters.interface import (
+    PostgresDatabaseAdapter,
+    PostgresTransactionDatabaseAdapter,
+)
 
 @dataclass
 class User:
@@ -319,7 +322,9 @@ class UserRepository:
         self._db = db
 
     async def get_by_id(self, user_id: int) -> User | None:
-        row = await self._db.fetch_one("SELECT id, name FROM users WHERE id=$1", user_id)
+        row = await self._db.fetch_one(
+            "SELECT id, name FROM users WHERE id=$1", user_id
+        )
         return User(id=row["id"], name=row["name"]) if row else None
 
 class UnitOfWork:
