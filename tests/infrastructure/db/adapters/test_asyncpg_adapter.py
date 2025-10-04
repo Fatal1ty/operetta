@@ -21,6 +21,10 @@ class _FakeConn:
         self.calls.append(("fetchrow", query, args))
         return {"id": 1}
 
+    async def fetchval(self, query, *args, **kwargs):
+        self.calls.append(("fetchval", query, args))
+        return 42
+
     async def execute(self, query, *args, **kwargs):
         self.calls.append(("execute", query, args))
         return "EXECUTE 1"
@@ -86,6 +90,19 @@ async def test_asyncpg_adapter_fetch_and_execute():
 
 
 @pytest.mark.asyncio
+async def test_asyncpg_adapter_fetch_val():
+    conn = _FakeConn()
+    pool = _FakePool(conn)
+    adapter = AsyncpgPostgresDatabaseAdapter(pool)  # type: ignore[arg-type]
+
+    val = await adapter.fetch_val("SELECT 42")
+
+    assert val == 42
+    assert ("fetchval", "SELECT 42", ()) in conn.calls
+    assert pool.acquire_calls == 1
+
+
+@pytest.mark.asyncio
 async def test_asyncpg_adapter_fetch_one_write_aliases_fetch_one():
     conn = _FakeConn()
     pool = _FakePool(conn)
@@ -135,6 +152,17 @@ async def test_asyncpg_tx_adapter_fetch_one_write_aliases_fetch_one():
     row = await adapter.fetch_one_write("SELECT 1")
     assert row == {"id": 1}
     assert ("fetchrow", "SELECT 1", ()) in conn.calls
+
+
+@pytest.mark.asyncio
+async def test_asyncpg_tx_adapter_fetch_val():
+    conn = _FakeConn()
+    adapter = AsyncpgPostgresTxDatabaseAdapter(conn)  # type: ignore[arg-type]
+
+    val = await adapter.fetch_val("SELECT 42")
+
+    assert val == 42
+    assert ("fetchval", "SELECT 42", ()) in conn.calls
 
 
 @pytest.mark.asyncio

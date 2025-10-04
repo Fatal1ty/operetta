@@ -1,5 +1,5 @@
 devel:
-    poetry install
+    poetry install --all-extras
 
 clean:
     rm -rf build dist

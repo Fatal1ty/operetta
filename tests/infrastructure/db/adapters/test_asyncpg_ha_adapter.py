@@ -19,6 +19,10 @@ class _FakeConn:
         self.calls.append(("fetchrow", query, args))
         return {"id": 1}
 
+    async def fetchval(self, query, *args, **kwargs):
+        self.calls.append(("fetchval", query, args))
+        return 42
+
     async def execute(self, query, *args, **kwargs):
         self.calls.append(("execute", query, args))
         return "EXECUTE 1"
@@ -76,3 +80,18 @@ async def test_asyncpg_ha_adapter_routes_reads_to_replica_and_writes_to_master()
     assert ("fetchrow", "SELECT 2", ()) in conn.calls
     assert ("fetchrow", "INSERT ... RETURNING id", ()) in conn.calls
     assert ("execute", "SELECT 1", ()) in conn.calls
+
+
+@pytest.mark.asyncio
+async def test_asyncpg_ha_adapter_fetch_val_routes_to_replica():
+    conn = _FakeConn()
+    pool = _FakePoolManager(conn)
+
+    adapter = AsyncpgHAPostgresDatabaseAdapter(pool)  # type: ignore[arg-type]
+
+    val = await adapter.fetch_val("SELECT 42")
+
+    assert val == 42
+    assert pool.acquire_replica_calls == 1
+    assert pool.acquire_master_calls == 0
+    assert ("fetchval", "SELECT 42", ()) in conn.calls

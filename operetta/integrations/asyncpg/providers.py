@@ -1,4 +1,4 @@
-from typing import AsyncIterable
+from typing import Any, AsyncIterable, Mapping
 
 import asyncpg
 from dishka import Provider, Scope, provide
@@ -11,9 +11,9 @@ from operetta.ddd.infrastructure.db.postgres.adapters.interface import (
     PostgresDatabaseAdapter,
     PostgresTransactionDatabaseAdapter,
 )
-from operetta.integrations.asyncpg.config import AsyncpgPostgresDatabaseConfig
-from operetta.integrations.asyncpg_ha.config import (
+from operetta.integrations.asyncpg.config import (
     AsyncpgPoolFactoryKwargs,
+    AsyncpgPostgresDatabaseConfig,
 )
 from operetta.types import ApplicationDictConfig
 
@@ -57,11 +57,20 @@ class AsyncpgPostgresDatabaseProvider(Provider):
 class AsyncpgPostgresDatabaseConfigProvider(Provider):
     scope = Scope.APP
 
+    def get_postgres_section(
+        self, app_dict_config: ApplicationDictConfig
+    ) -> Mapping[str, Any]:
+        if "postgres" not in app_dict_config:
+            raise ValueError(
+                "Missing 'postgres' section in application config"
+            )
+        return app_dict_config["postgres"]
+
     @provide
     def get_db_config(
         self, app_dict_config: ApplicationDictConfig
     ) -> AsyncpgPostgresDatabaseConfig:
-        db_config = app_dict_config["postgres"]
+        db_config = self.get_postgres_section(app_dict_config)
         db_config_kwargs = {
             "user": db_config["user"],
             "database": db_config["database"],

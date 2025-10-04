@@ -12,6 +12,10 @@ class PostgresDatabaseAdapter(ABC):
         pass
 
     @abstractmethod
+    async def fetch_val(self, query: Any, *args, **kwargs) -> Any:
+        pass
+
+    @abstractmethod
     async def fetch_one_write(self, query: Any, *args, **kwargs) -> Any:
         pass
 

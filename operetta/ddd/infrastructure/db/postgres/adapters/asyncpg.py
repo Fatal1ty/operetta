@@ -21,6 +21,10 @@ class AsyncpgPostgresDatabaseAdapter(PostgresDatabaseAdapter):
         async with self._pool.acquire() as conn:
             return await conn.fetchrow(query, *args, **kwargs)
 
+    async def fetch_val(self, query: Any, *args, **kwargs) -> Any:
+        async with self._pool.acquire() as conn:
+            return await conn.fetchval(query, *args, **kwargs)
+
     async def fetch_one_write(self, query: Any, *args, **kwargs) -> Any:
         return await self.fetch_one(query, *args, **kwargs)
 
@@ -39,6 +43,9 @@ class AsyncpgPostgresTxDatabaseAdapter(PostgresTransactionDatabaseAdapter):
 
     async def fetch_one(self, query: Any, *args, **kwargs) -> Any:
         return await self._conn.fetchrow(query, *args, **kwargs)
+
+    async def fetch_val(self, query: Any, *args, **kwargs) -> Any:
+        return await self._conn.fetchval(query, *args, **kwargs)
 
     async def fetch_one_write(self, query: Any, *args, **kwargs) -> Any:
         return await self.fetch_one(query, *args, **kwargs)

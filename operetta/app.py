@@ -11,7 +11,7 @@ class Application:
     def __init__(
         self,
         *services: aiomisc.Service,
-        di_providers: Iterable[BaseProvider],
+        di_providers: Iterable[BaseProvider] = (),
         description: str | None = None,
         warmup_dependencies: bool = False,
         log_level: int | str = LogLevel.debug,

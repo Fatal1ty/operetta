@@ -1,5 +1,5 @@
 import logging
-from typing import AsyncIterable
+from typing import Any, AsyncIterable, Mapping
 
 import asyncpg
 import hasql.asyncpg
@@ -18,9 +18,9 @@ from operetta.ddd.infrastructure.db.postgres.adapters.interface import (
     PostgresDatabaseAdapter,
     PostgresTransactionDatabaseAdapter,
 )
+from operetta.integrations.asyncpg.config import AsyncpgPoolFactoryKwargs
 from operetta.integrations.asyncpg_ha.config import (
     AsyncpgHAPostgresDatabaseConfig,
-    AsyncpgPoolFactoryKwargs,
     BalancerPolicyType,
 )
 from operetta.types import ApplicationDictConfig
@@ -57,7 +57,6 @@ class AsyncpgHAPostgresDatabaseProvider(Provider):
             await pool.ready(
                 masters_count=config.min_masters,
                 replicas_count=config.min_replicas,
-                timeout=config.acquire_timeout,
             )
         except Exception as e:
             log.error("Failed to get pool ready: %r", e)
@@ -87,11 +86,20 @@ class AsyncpgHAPostgresDatabaseProvider(Provider):
 class AsyncpgHAPostgresDatabaseConfigProvider(Provider):
     scope = Scope.APP
 
+    def get_postgres_section(
+        self, app_dict_config: ApplicationDictConfig
+    ) -> Mapping[str, Any]:
+        if "postgres" not in app_dict_config:
+            raise ValueError(
+                "Missing 'postgres' section in application config"
+            )
+        return app_dict_config["postgres"]
+
     @provide
     def get_db_config(
         self, app_dict_config: ApplicationDictConfig
     ) -> AsyncpgHAPostgresDatabaseConfig:
-        db_config = app_dict_config["postgres"]
+        db_config = self.get_postgres_section(app_dict_config)
         db_config_kwargs = {
             "user": db_config["user"],
             "database": db_config["database"],

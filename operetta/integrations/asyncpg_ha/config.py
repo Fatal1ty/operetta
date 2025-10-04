@@ -1,21 +1,13 @@
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Callable, Coroutine
 
-import asyncpg
 from hasql import base as hasql_base
-from typing_extensions import TypedDict
 
 
 class BalancerPolicyType(StrEnum):
     GREEDY = "greedy"
     ROUND_ROBIN = "round_robin"
     RANDOM_WEIGHTED = "random_weighted"
-
-
-@dataclass
-class AsyncpgPoolFactoryKwargs(TypedDict, total=False):
-    init: Callable[[asyncpg.Connection], Coroutine[Any, Any, Any]] | None
 
 
 @dataclass
