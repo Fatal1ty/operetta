@@ -23,7 +23,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - name: Install dependencies
-        run: poetry install --all-extras
+        run: |
+          pip install poetry
+          poetry install --all-extras
       - name: Run isort
         run: isort --check --diff operetta
       - name: Run black
@@ -48,7 +50,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - name: Install dependencies
-        run: poetry install --all-extras
+        run: |
+          pip install poetry
+          poetry install --all-extras
       - name: Run isort
         run: isort --check --diff operetta
       - name: Run black
@@ -73,7 +77,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - name: Install dependencies
-        run: poetry install --all-extras
+        run: |
+          pip install poetry
+          poetry install --all-extras
       - name: Run isort
         run: isort --check --diff operetta
       - name: Run black
