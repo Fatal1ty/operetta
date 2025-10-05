@@ -1,5 +1,7 @@
 <div align="center">
 
+<img alt="logo" width="175" src="https://raw.githubusercontent.com/Fatal1ty/operetta/7e3e80a54dfc91673dacb36a64c1379aae36a042/img/logo.png">
+
 ###### Build apps. Zero fuss.
 
 [![Build Status](https://github.com/Fatal1ty/operetta/workflows/tests/badge.svg)](https://github.com/Fatal1ty/operetta/actions)
