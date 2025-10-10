@@ -1,11 +1,65 @@
 [project]
 name = "operetta"
-version = "0.0.7"
+version = "0.0.9"
 description = ""
 authors = [
     {name = "Alexander Tikhonov",email = "random.gauss@gmail.com"}
 ]
 license = {text = "Apache-2.0"}
+keywords = [
+    "application",
+    "framework",
+    "ddd",
+    "domain-driven design",
+    "asyncio",
+    "microservices",
+    "microservice",
+    "dependency-injection",
+    "dependency injection",
+    "di",
+    "web",
+    "api",
+    "rest",
+    "aiohttp",
+    "http",
+    "openapi",
+    "openapi3",
+    "swagger",
+    "swagger-ui",
+    "redoc",
+    "postgres",
+    "postgresql",
+    "database",
+    "asyncpg",
+    "hasql",
+    "aiomisc",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Framework :: AsyncIO",
+    "Typing :: Typed",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Database",
+    "Topic :: Database :: Front-Ends",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
 dependencies = [

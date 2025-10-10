@@ -48,7 +48,7 @@ A lightweight framework for building Python applications that is not tied to a s
 
 ## Installation
 
-Requires Python 3.10+.
+Requires Python 3.11+.
 
 - Base:
 
