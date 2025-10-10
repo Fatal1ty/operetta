@@ -4,7 +4,6 @@ from typing import Generic, Sequence, TypeVar
 import aiomisc
 import dishka
 
-
 T = TypeVar("T")
 
 
