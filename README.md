@@ -257,7 +257,7 @@ You can configure `AIOHTTPService` in three complementary ways:
 Precedence rule:
 - `__init__` > DI (`AIOHTTPServiceConfigProvider`) > internal defaults
 
-> [!TIP]\
+> [!TIP]
 > - `AIOHTTPConfigurationService` is an optional helper that installs `AIOHTTPServiceConfigProvider` into DI.
 > - This provider reads `ApplicationDictConfig['api']` and decodes it into `AIOHTTPServiceConfig`.
 > - YAML is not required. You can provide `AIOHTTPServiceConfig` via any DI provider.
@@ -503,7 +503,7 @@ app = Application(
 )
 ```
 
-> [!TIP]\
+> [!TIP]
 > DI exposes the same adapter interfaces, so repository and unit of work code stays unchanged.
 
 ### Advanced setup
