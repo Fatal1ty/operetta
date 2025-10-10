@@ -251,16 +251,21 @@ A first-class integration for building HTTP APIs with declarative handler parame
 You can configure `AIOHTTPService` in three complementary ways:
 
 - Via constructor (`__init__`) arguments — explicit values have the highest priority.
-- Via YAML file (`YAMLConfigurationService` + `AIOHTTPConfigurationService`) — good for ops-driven setups; overrides defaults but not explicit `__init__` values.
+- Via YAML file (`YAMLConfigurationService` + `AIOHTTPConfigurationService`/`AIOHTTPServiceConfigProvider`) — good for ops-driven setups; overrides defaults but not explicit `__init__` values.
 - Via custom DI providers — e.g., environment variables or secrets managers.
 
 Precedence rule:
-- init > YAML > internal defaults
+- `__init__` > DI (`AIOHTTPServiceConfigProvider`) > internal defaults
 
-YAML keys (all optional) live under the `aiohttp:` section:
+> [!TIP]\
+> - `AIOHTTPConfigurationService` is an optional helper that installs `AIOHTTPServiceConfigProvider` into DI.
+> - This provider reads `ApplicationDictConfig['api']` and decodes it into `AIOHTTPServiceConfig`.
+> - YAML is not required. You can provide `AIOHTTPServiceConfig` via any DI provider.
+
+YAML keys (all optional) live under the `api:` section:
 
 ```yaml
-aiohttp:
+api:
   address: 0.0.0.0         # bind address
   port: 8081               # listen port
   static_endpoint_prefix: /static/
@@ -293,7 +298,7 @@ from operetta.integrations.aiohttp import (
 
 app = Application(
     YAMLConfigurationService(),            # loads --config path and exposes dict to DI
-    AIOHTTPConfigurationService(),         # reads aiohttp: section and provides config
+    AIOHTTPConfigurationService(),         # registers AIOHTTPServiceConfigProvider reading the api: section
     AIOHTTPService(
         routes=[],
         # You may still override settings here (constructor wins over YAML):
