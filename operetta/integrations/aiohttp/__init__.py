@@ -1,1 +1,2 @@
-from .service import AIOHTTPService
+from .providers import AIOHTTPServiceConfigProvider
+from .service import AIOHTTPConfigurationService, AIOHTTPService
