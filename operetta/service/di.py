@@ -1,5 +1,4 @@
 import logging
-from contextlib import suppress
 from typing import Any, Sequence
 
 import aiomisc
