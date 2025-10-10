@@ -314,8 +314,8 @@ from operetta.integrations.aiohttp import (
 )
 
 app = Application(
-    YAMLConfigurationService(),            # loads --config path and exposes dict to DI
-    AIOHTTPConfigurationService(),         # registers AIOHTTPServiceConfigProvider reading the api: section
+    YAMLConfigurationService(),  # loads --config path and exposes dict to DI
+    AIOHTTPConfigurationService(),  # registers AIOHTTPServiceConfigProvider
     AIOHTTPService(
         routes=[],
         # You may still override settings here (constructor wins over YAML):
