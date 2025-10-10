@@ -137,12 +137,3 @@ class DependencyThrottledError(InfrastructureError):
     """An external dependency throttled the request (rate/quota)."""
 
     pass
-
-
-# Backwards-compatible aliases (no strict BC required, helpful for migration)
-AppBaseException = AppError
-EntityNotFoundError = NotFoundError
-EntityExistsError = AlreadyExistsError
-RelatedEntityNotFoundError = RelatedResourceNotFoundError
-AuthenticationFailedError = AuthenticationError
-AuthorizationFailedError = AuthorizationError

@@ -392,7 +392,7 @@ HTTP mapping of DDD exceptions (handled by middleware)
 | AuthorizationError, PermissionDeniedError                                                                         | 403         | ForbiddenError           | FORBIDDEN             |
 | NotFoundError                                                                                                     | 404         | ResourceNotFoundError    | RESOURCE_NOT_FOUND    |
 | AlreadyExistsError                                                                                                | 409         | DuplicateRequestError    | DUPLICATE_RESOURCE    |
-| ConflictError                                                                                                     | 409         | ConflictError            | CONFLICT              |
+| ConflictError, InvalidOperationError                                                                              | 409         | ConflictError            | CONFLICT              |
 | ValidationError, RelatedResourceNotFoundError                                                                     | 422         | UnprocessableEntityError | UNPROCESSABLE_ENTITY  |
 | DeadlineExceededError                                                                                             | 504         | GatewayTimeoutError      | GATEWAY_TIMEOUT       |
 | DependencyThrottledError, DependencyUnavailableError, SubsystemUnavailableError, SystemResourceLimitExceededError | 503         | ServiceUnavailableError  | SERVICE_UNAVAILABLE   |

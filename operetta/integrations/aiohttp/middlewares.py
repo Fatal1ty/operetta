@@ -15,6 +15,7 @@ from operetta.ddd.errors import (
     DependencyThrottledError,
     DependencyUnavailableError,
     InfrastructureError,
+    InvalidOperationError,
     NotFoundError,
     PermissionDeniedError,
     RelatedResourceNotFoundError,
@@ -67,7 +68,7 @@ async def ddd_errors_middleware(
         raise http_errors.ResourceNotFoundError(details=e.details)
     except (RelatedResourceNotFoundError, ValidationError) as e:
         raise http_errors.UnprocessableEntityError(details=e.details)
-    except ConflictError as e:
+    except (ConflictError, InvalidOperationError) as e:
         raise http_errors.ConflictError(details=e.details)
     except AuthenticationError as e:
         raise http_errors.UnauthorizedError(details=e.details)
