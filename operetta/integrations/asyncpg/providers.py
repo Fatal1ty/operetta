@@ -40,7 +40,7 @@ class AsyncpgPostgresDatabaseProvider(Provider):
         self, pool: asyncpg.Pool
     ) -> AsyncIterable[asyncpg.Connection]:
         async with pool.acquire() as conn:
-            yield conn
+            yield conn  # type: ignore
 
     db_adapter = provide(
         AsyncpgPostgresDatabaseAdapter,
