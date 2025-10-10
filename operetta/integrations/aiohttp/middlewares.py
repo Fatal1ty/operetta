@@ -4,6 +4,7 @@ from typing import Awaitable, Callable
 from aiohttp import web
 from aiohttp.web_exceptions import HTTPException
 
+from operetta.ddd import ValidationError
 from operetta.ddd.errors import (
     AlreadyExistsError,
     AuthenticationError,
@@ -64,7 +65,7 @@ async def ddd_errors_middleware(
         raise http_errors.DuplicateRequestError(details=e.details)
     except NotFoundError as e:
         raise http_errors.ResourceNotFoundError(details=e.details)
-    except RelatedResourceNotFoundError as e:
+    except (RelatedResourceNotFoundError, ValidationError) as e:
         raise http_errors.UnprocessableEntityError(details=e.details)
     except ConflictError as e:
         raise http_errors.ConflictError(details=e.details)

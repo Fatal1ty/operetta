@@ -380,25 +380,24 @@ Recommended way to raise errors in your app
 
   ```python
   raise NotFoundError(
-      "User not found",
       details=[{"resource": "User", "id": user_id}]
   )
   ```
 
 HTTP mapping of DDD exceptions (handled by middleware)
 
-| DDD exception                                                                  | HTTP status | HTTP error               | code                  |
-|--------------------------------------------------------------------------------|-------------|--------------------------|-----------------------|
-| AuthenticationError                                                            | 401         | UnauthorizedError        | UNAUTHORIZED          |
-| AuthorizationError, PermissionDeniedError                                      | 403         | ForbiddenError           | FORBIDDEN             |
-| NotFoundError                                                                  | 404         | ResourceNotFoundError    | RESOURCE_NOT_FOUND    |
-| AlreadyExistsError                                                             | 409         | DuplicateRequestError    | DUPLICATE_RESOURCE    |
-| ConflictError                                                                  | 409         | ConflictError            | CONFLICT              |
-| ValidationError, RelatedResourceNotFoundError                                  | 422         | UnprocessableEntityError | UNPROCESSABLE_ENTITY  |
-| DeadlineExceededError                                                          | 504         | GatewayTimeoutError      | GATEWAY_TIMEOUT       |
-| DependencyUnavailableError, SubsystemUnavailableError                          | 503         | ServiceUnavailableError  | SERVICE_UNAVAILABLE   |
-| DependencyFailureError                                                         | 502         | BadGatewayError          | BAD_GATEWAY           |
-| StorageIntegrityError, TransportIntegrityError, InfrastructureError (fallback) | 500         | ServerError              | INTERNAL_SERVER_ERROR |
+| DDD exception                                                                                                     | HTTP status | HTTP error               | code                  |
+|-------------------------------------------------------------------------------------------------------------------|-------------|--------------------------|-----------------------|
+| AuthenticationError                                                                                               | 401         | UnauthorizedError        | UNAUTHORIZED          |
+| AuthorizationError, PermissionDeniedError                                                                         | 403         | ForbiddenError           | FORBIDDEN             |
+| NotFoundError                                                                                                     | 404         | ResourceNotFoundError    | RESOURCE_NOT_FOUND    |
+| AlreadyExistsError                                                                                                | 409         | DuplicateRequestError    | DUPLICATE_RESOURCE    |
+| ConflictError                                                                                                     | 409         | ConflictError            | CONFLICT              |
+| ValidationError, RelatedResourceNotFoundError                                                                     | 422         | UnprocessableEntityError | UNPROCESSABLE_ENTITY  |
+| DeadlineExceededError                                                                                             | 504         | GatewayTimeoutError      | GATEWAY_TIMEOUT       |
+| DependencyThrottledError, DependencyUnavailableError, SubsystemUnavailableError, SystemResourceLimitExceededError | 503         | ServiceUnavailableError  | SERVICE_UNAVAILABLE   |
+| DependencyFailureError                                                                                            | 502         | BadGatewayError          | BAD_GATEWAY           |
+| StorageIntegrityError, TransportIntegrityError, InfrastructureError (fallback)                                    | 500         | ServerError              | INTERNAL_SERVER_ERROR |
 
 Response envelope reference
 
