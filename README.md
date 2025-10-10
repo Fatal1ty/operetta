@@ -1,6 +1,6 @@
 <div align="center">
 
-<img alt="logo" width="175" src="https://raw.githubusercontent.com/Fatal1ty/operetta/7e3e80a54dfc91673dacb36a64c1379aae36a042/img/logo.png">
+<img alt="logo" width="175" src="https://raw.githubusercontent.com/Fatal1ty/operetta/refs/heads/main/img/logo.svg">
 
 ###### Design Python services right
 
