@@ -144,6 +144,23 @@ if __name__ == "__main__":
     app.run()
 ```
 
+Short example: raising DDD errors in handlers
+
+```python
+from operetta.ddd import NotFoundError, AuthorizationError
+
+async def get_user(_: web.Request, user_id: FromPath[int]) -> User:
+    # Example auth check
+    if not has_access_to_user(user_id):
+        raise AuthorizationError(details=[{"permission": "users:read"}])
+
+    user = await repo.get_user(user_id)
+    if user is None:
+        raise NotFoundError(details=[{"id": user_id}])
+
+    return user
+```
+
 Open the docs at:
 
 - OpenAPI spec: `/static/openapi/openapi.yaml` (static files path is configurable).
@@ -341,6 +358,76 @@ Under the hood `AIOHTTPService` tries to resolve `AIOHTTPServiceConfig` from DI 
 - Errors use `{ "success": false, "data": null, "error": { message, code, details } }`.
 - Standard AIOHTTP errors and domain/infrastructure errors (see `operetta.ddd.*.errors`) are mapped by middleware from `integrations/aiohttp/middlewares.py`.
 - Parsing errors for body/params use types from `integrations/aiohttp/errors.py` (`InvalidJSONBodyError`, `InvalidQueryParamsError`, `InvalidPathParamsError`, ...).
+
+Recommended way to raise errors in your app
+
+- Import DDD exceptions from a single place:
+
+  ```python
+  from operetta.ddd import (
+      NotFoundError,
+      AlreadyExistsError,
+      ConflictError,
+      ValidationError,
+      AuthenticationError,
+      AuthorizationError,
+      RelatedResourceNotFoundError,
+      DependencyUnavailableError,
+  )
+  ```
+
+- Raise with optional structured details (a sequence of JSON-serializable objects):
+
+  ```python
+  raise NotFoundError(
+      "User not found",
+      details=[{"resource": "User", "id": user_id}]
+  )
+  ```
+
+HTTP mapping of DDD exceptions (handled by middleware)
+
+| DDD exception                                                                  | HTTP status | HTTP error               | code                  |
+|--------------------------------------------------------------------------------|-------------|--------------------------|-----------------------|
+| AuthenticationError                                                            | 401         | UnauthorizedError        | UNAUTHORIZED          |
+| AuthorizationError, PermissionDeniedError                                      | 403         | ForbiddenError           | FORBIDDEN             |
+| NotFoundError                                                                  | 404         | ResourceNotFoundError    | RESOURCE_NOT_FOUND    |
+| AlreadyExistsError                                                             | 409         | DuplicateRequestError    | DUPLICATE_RESOURCE    |
+| ConflictError                                                                  | 409         | ConflictError            | CONFLICT              |
+| ValidationError, RelatedResourceNotFoundError                                  | 422         | UnprocessableEntityError | UNPROCESSABLE_ENTITY  |
+| DeadlineExceededError                                                          | 504         | GatewayTimeoutError      | GATEWAY_TIMEOUT       |
+| DependencyUnavailableError, SubsystemUnavailableError                          | 503         | ServiceUnavailableError  | SERVICE_UNAVAILABLE   |
+| DependencyFailureError                                                         | 502         | BadGatewayError          | BAD_GATEWAY           |
+| StorageIntegrityError, TransportIntegrityError, InfrastructureError (fallback) | 500         | ServerError              | INTERNAL_SERVER_ERROR |
+
+Response envelope reference
+
+- Success:
+
+  ```json
+  { "success": true, "data": { "id": 1, "name": "Alice" }, "error": null }
+  ```
+
+- Error:
+
+  ```json
+  {
+    "success": false,
+    "data": null,
+    "error": {
+      "message": "Resource not found",
+      "code": "RESOURCE_NOT_FOUND",
+      "details": [ { "resource": "User", "id": 123 } ]
+    }
+  }
+  ```
+
+Advanced
+
+- You can throw HTTP-specific errors directly if you need full control over the client response: see `operetta.integrations.aiohttp.errors` (e.g., `ForbiddenError`, `UnauthorizedError`, `UnprocessableEntityError`).
+- Two middlewares are installed by default:
+  - `ddd_errors_middleware` maps DDD exceptions to HTTP errors above.
+  - `unhandled_error_middleware` catches all other exceptions and returns a generic 500 with a safe message.
 
 ## PostgreSQL
 

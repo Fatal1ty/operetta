@@ -4,24 +4,23 @@ from typing import Awaitable, Callable
 from aiohttp import web
 from aiohttp.web_exceptions import HTTPException
 
-from operetta.ddd.application.errors import RelatedEntityNotFoundError
-from operetta.ddd.domain.errors import (
+from operetta.ddd.errors import (
+    AlreadyExistsError,
+    AuthenticationError,
+    AuthorizationError,
     ConflictError,
-    EntityExistsError,
-    EntityNotFoundError,
-    ValidationError,
-)
-from operetta.ddd.infrastructure.errors import (
     DeadlineExceededError,
     DependencyFailureError,
     DependencyThrottledError,
     DependencyUnavailableError,
     InfrastructureError,
+    NotFoundError,
+    PermissionDeniedError,
+    RelatedResourceNotFoundError,
     StorageIntegrityError,
     SubsystemUnavailableError,
     SystemResourceLimitExceededError,
     TransportIntegrityError,
-    UnexpectedInfrastructureError,
 )
 from operetta.integrations.aiohttp import errors as http_errors
 from operetta.integrations.aiohttp.response import error_response
@@ -61,16 +60,18 @@ async def ddd_errors_middleware(
     try:
         resp = await handler(request)
         return resp
-    except EntityExistsError as e:
+    except AlreadyExistsError as e:
         raise http_errors.DuplicateRequestError(details=e.details)
-    except EntityNotFoundError as e:
+    except NotFoundError as e:
         raise http_errors.ResourceNotFoundError(details=e.details)
-    except RelatedEntityNotFoundError as e:
+    except RelatedResourceNotFoundError as e:
         raise http_errors.UnprocessableEntityError(details=e.details)
     except ConflictError as e:
         raise http_errors.ConflictError(details=e.details)
-    except ValidationError as e:
-        raise http_errors.UnprocessableEntityError(details=e.details)
+    except AuthenticationError as e:
+        raise http_errors.UnauthorizedError(details=e.details)
+    except (AuthorizationError, PermissionDeniedError) as e:
+        raise http_errors.ForbiddenError(details=e.details)
     except DeadlineExceededError as e:
         raise http_errors.GatewayTimeoutError(details=e.details)
     except (DependencyUnavailableError, SubsystemUnavailableError) as e:
@@ -81,5 +82,5 @@ async def ddd_errors_middleware(
         raise http_errors.ServerError(details=e.details)
     except (SystemResourceLimitExceededError, DependencyThrottledError) as e:
         raise http_errors.ServiceUnavailableError(details=e.details)
-    except (UnexpectedInfrastructureError, InfrastructureError) as e:
+    except InfrastructureError as e:
         raise http_errors.ServerError(details=e.details)

@@ -41,6 +41,18 @@ class InvalidPathParamsError(ClientError):
     message_format = "Invalid path parameters"
 
 
+class UnauthorizedError(ClientError):
+    status = 401
+    code = "UNAUTHORIZED"
+    message_format = "Unauthorized"
+
+
+class ForbiddenError(ClientError):
+    status = 403
+    code = "FORBIDDEN"
+    message_format = "Forbidden"
+
+
 class ResourceNotFoundError(ClientError):
     status = 404
     code = "RESOURCE_NOT_FOUND"
