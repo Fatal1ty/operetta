@@ -14,7 +14,7 @@
 
 A lightweight framework for building Python applications that is not tied to a specific transport protocol. It is built on top of [aiomisc](https://github.com/aiokitchen/aiomisc) (service lifecycle, entrypoint) and [dishka](https://github.com/reagento/dishka) (dependency injection). On top of that, the following integrations are available:
 
-- AIOHTTP: declarative handlers with DI for request body, query, and path params; automatic OpenAPI generation with [Swagger](https://github.com/swagger-api/swagger-ui) and [Redoc](https://github.com/Redocly/redoc).
+- [AIOHTTP](https://github.com/aio-libs/aiohttp): declarative handlers with DI for request body, query, and path params; automatic OpenAPI generation with [Swagger](https://github.com/swagger-api/swagger-ui) and [Redoc](https://github.com/Redocly/redoc).
 - PostgreSQL via [asyncpg](https://github.com/MagicStack/asyncpg): a database adapter and DI provider for a connection pool.
 - PostgreSQL with HA via [hasql](https://github.com/aiokitchen/hasql): a pool with balancing, failover and the same adapter layer.
 
@@ -37,12 +37,12 @@ A lightweight framework for building Python applications that is not tied to a s
 
 ## Highlights
 
-- Services as units of functionality: each service starts/stops via aiomisc and may provide DI providers.
-- Single DI container ([dishka](https://github.com/reagento/dishka)) for the whole app; separate [scopes](https://dishka.readthedocs.io/en/stable/advanced/scopes.html) for APP and REQUEST.
+- Services as units of functionality: each service starts/stops via [aiomisc](https://github.com/aiokitchen/aiomisc) and may provide DI providers.
+- Single DI container ([dishka](https://github.com/reagento/dishka)) for the whole app; separate [scopes](https://dishka.readthedocs.io/en/stable/advanced/scopes.html) for `APP` and `REQUEST`.
 - [AIOHTTP](https://github.com/aio-libs/aiohttp) integration:
   - Handler parameter annotations: `FromBody[T]`, `FromQuery[T]`, `FromPath[T]`.
   - Automatic parsing and validation via [mashumaro](https://github.com/Fatal1ty/mashumaro); friendly error details.
-  - Unified JSON envelope for responses: `{success, data, error}`.
+  - Unified JSON envelope for responses.
   - OpenAPI generation with static assets for Swagger/Redoc.
 - PostgreSQL integrations ([asyncpg](https://github.com/MagicStack/asyncpg)/[hasql](https://github.com/aiokitchen/hasql)): interface adapter `PostgresDatabaseAdapter` + transactional `PostgresTransactionDatabaseAdapter` for repositories and units of work.
 
@@ -169,19 +169,19 @@ Open the docs at:
 
 ### How it works under the hood
 
-- `AIOHTTPService` at app creation time:
-  - Wraps your routes by inspecting handler signatures and `FromBody/FromQuery/FromPath` annotations.
+- [`AIOHTTPService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/service.py) at app creation time:
+  - Wraps your routes by inspecting handler signatures and [`FromBody`/`FromQuery`/`FromPath`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/annotations.py) annotations.
   - Injects parsed values into the handler call.
-  - If the return type is not a `StreamResponse`, serializes result into `SuccessResponse[T]` and returns JSON.
+  - If the return type is not a `StreamResponse`, serializes result into [`SuccessResponse[T]`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/response.py) and returns JSON ([format details](#error-handling-and-response-format)).
   - Builds the OpenAPI spec via [openapify](https://github.com/Fatal1ty/openapify) and serves it as static.
   - Attaches system middleware: DDD error mapping to HTTP and a global unhandled error catcher.
 - DI is configured via [dishka integration with AIOHTTP](https://dishka.readthedocs.io/en/stable/integrations/aiohttp.html); the container is created by [`DIService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/service/di.py) and wired into the app.
-  - Each request gets a new DI scope (REQUEST) for per-request dependencies.
-  - Handler parameters may be any DI-resolvable type (e.g., services, database adapters) in addition to `FromBody/FromQuery/FromPath` via `FromDishka`
+  - Each request gets a new DI scope (`REQUEST`) for per-request dependencies.
+  - Handler parameters may be any DI-resolvable type (e.g., services, database adapters) in addition to `FromBody/FromQuery/FromPath` via `FromDishka`.
 
 ## Quickstart (non-HTTP app)
 
-Operetta is not tied to HTTP. You can write background services/workers on `aiomisc` and use DI:
+Operetta is not tied to HTTP. You can write background services/workers on [aiomisc](https://github.com/aiokitchen/aiomisc) and use DI:
 
 ```python
 import asyncio
@@ -229,7 +229,7 @@ config_service = YAMLConfigurationService()  # reads --config path from CLI
 app = Application(config_service)
 ```
 
-Two values are provided to DI: `ApplicationDictConfig` (raw dict) and a config object (if you provide `config_cls`/`config_factory`).
+Two values are provided to DI: [`ApplicationDictConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/types.py) (raw dict) and a config object (if you provide `config_cls`/`config_factory`).
 
 Custom config class (mashumaro DataClassDictMixin):
 
@@ -259,25 +259,25 @@ app = Application(config_service)
 
 A first-class integration for building HTTP APIs with declarative handler parameters, DI, and autogenerated OpenAPI/Swagger/Redoc.
 
-- Handler parameter annotations: `FromBody[T]`, `FromQuery[T]`, `FromPath[T]` (plus DI via `FromDishka`).
+- Handler parameter annotations: [`FromBody[T]`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/annotations.py), [`FromQuery[T]`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/annotations.py), [`FromPath[T]`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/annotations.py) (plus DI via `FromDishka`).
 - Unified JSON responses out of the box.
 - Automatic OpenAPI spec generation and static docs at `/docs` (Swagger or Redoc).
 
 ### Configuration
 
-You can configure `AIOHTTPService` in three complementary ways:
+You can configure [`AIOHTTPService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/service.py) in three complementary ways:
 
 - Via constructor (`__init__`) arguments — explicit values have the highest priority.
-- Via YAML file (`YAMLConfigurationService` + `AIOHTTPConfigurationService`/`AIOHTTPServiceConfigProvider`) — good for ops-driven setups; overrides defaults but not explicit `__init__` values.
+- Via YAML file ([`YAMLConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/service/configuration.py) + [`AIOHTTPConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/service.py)/[`AIOHTTPServiceConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/providers.py)) — good for ops-driven setups; overrides defaults but not explicit `__init__` values.
 - Via custom DI providers — e.g., environment variables or secrets managers.
 
 Precedence rule:
-- `__init__` → DI (`AIOHTTPServiceConfigProvider`) → internal defaults
+- `__init__` → DI ([`AIOHTTPServiceConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/providers.py)) → internal defaults
 
 > [!TIP]
-> - `AIOHTTPConfigurationService` is a helper that installs `AIOHTTPServiceConfigProvider` into DI.
-> - This provider reads `ApplicationDictConfig['api']` and decodes it into `AIOHTTPServiceConfig`.
-> - YAML is not required. You can provide `AIOHTTPServiceConfig` via any DI provider.
+> - [`AIOHTTPConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/service.py) is a helper that installs [`AIOHTTPServiceConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/providers.py) into DI.
+> - This provider reads `ApplicationDictConfig['api']` and decodes it into [`AIOHTTPServiceConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/config.py).
+> - YAML is not required. You can provide [`AIOHTTPServiceConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/config.py) via any DI provider.
 
 YAML keys (all optional) live under the `api:` section:
 
@@ -350,14 +350,14 @@ app = Application(
 )
 ```
 
-Under the hood `AIOHTTPService` tries to resolve `AIOHTTPServiceConfig` from DI on start; if available, it merges values with the precedence above and continues startup as usual.
+Under the hood [`AIOHTTPService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/service.py) tries to resolve [`AIOHTTPServiceConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/config.py) from DI on start; if available, it merges values with the precedence above and continues startup as usual.
 
 ### Error handling and response format
 
 - Successful responses are automatically wrapped into `{ "success": true, "data": ..., "error": null }`.
 - Errors use `{ "success": false, "data": null, "error": { message, code, details } }`.
-- Standard AIOHTTP errors and domain/infrastructure errors (see `operetta.ddd.*.errors`) are mapped by middleware from `integrations/aiohttp/middlewares.py`.
-- Parsing errors for body/params use types from `integrations/aiohttp/errors.py` (`InvalidJSONBodyError`, `InvalidQueryParamsError`, `InvalidPathParamsError`, ...).
+- Standard AIOHTTP errors and domain/application/infrastructure errors (see [`operetta.ddd.errors`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/errors.py)) are mapped by middleware from [`integrations/aiohttp/middlewares.py`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/middlewares.py).
+- Parsing errors for body/params use types from [`integrations/aiohttp/errors.py`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/errors.py) (e.g., `InvalidJSONBodyError`, `InvalidQueryParamsError`, `InvalidPathParamsError`, ...).
 
 Recommended way to raise errors in your app
 
@@ -423,48 +423,48 @@ Response envelope reference
 
 Advanced
 
-- You can throw HTTP-specific errors directly if you need full control over the client response: see `operetta.integrations.aiohttp.errors` (e.g., `ForbiddenError`, `UnauthorizedError`, `UnprocessableEntityError`).
+- You can throw HTTP-specific errors directly if you need full control over the client response: see [`operetta.integrations.aiohttp.errors`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/errors.py) (e.g., `ForbiddenError`, `UnauthorizedError`, `UnprocessableEntityError`).
 - Two middlewares are installed by default:
-  - `ddd_errors_middleware` maps DDD exceptions to HTTP errors above.
-  - `unhandled_error_middleware` catches all other exceptions and returns a generic 500 with a safe message.
+  - [`ddd_errors_middleware`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/middlewares.py) maps DDD exceptions to HTTP errors above.
+  - [`unhandled_error_middleware`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/middlewares.py) catches all other exceptions and returns a generic 500 with a safe message.
 
 ## PostgreSQL
 
 Operetta provides a thin, uniform abstraction over PostgreSQL so your application code does not depend on a particular driver or pool manager. You write repositories and units of work against two interfaces:
 
-- `PostgresDatabaseAdapter` — a general-purpose adapter for any operations (fetch, fetch_one, execute, ...) without explicit transaction control.
-- `PostgresTransactionDatabaseAdapter` — the same API for all operations plus transaction control methods (start/commit/rollback) when you need to run multiple steps in a single transaction.
+- [`PostgresDatabaseAdapter`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/infrastructure/db/postgres/adapters/interface.py) — a general-purpose adapter for any operations (fetch, fetch_one, execute, ...) without explicit transaction control.
+- [`PostgresTransactionDatabaseAdapter`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/infrastructure/db/postgres/adapters/interface.py) — the same API for all operations plus transaction control methods (start/commit/rollback) when you need to run multiple steps in a single transaction.
 
 There are two interchangeable backends:
-- `asyncpg` — a straightforward single-pool setup.
-- `hasql` (asyncpg HA) — a high-availability pool manager with balancing/failover.
+- [asyncpg](https://github.com/MagicStack/asyncpg) — a straightforward single-pool setup.
+- [hasql](https://github.com/aiokitchen/hasql) (asyncpg HA) — a high-availability pool manager with balancing/failover.
 
 Both backends expose the same interfaces via DI, so switching is configuration-only. DI scopes are chosen to match typical usage:
-- `PostgresDatabaseAdapter` is provided with scope=APP (shared pool).
-- `PostgresTransactionDatabaseAdapter` is provided with scope=REQUEST (per-request/operation handle for transactional work).
+- [`PostgresDatabaseAdapter`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/infrastructure/db/postgres/adapters/interface.py) is provided with scope=APP (shared pool).
+- [`PostgresTransactionDatabaseAdapter`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/infrastructure/db/postgres/adapters/interface.py) is provided with scope=REQUEST (per-request/operation handle for transactional work).
 
 Configuration is provided via DI:
-- Connection config types: `AsyncpgPostgresDatabaseConfig` (for asyncpg) and `AsyncpgHAPostgresDatabaseConfig` (for asyncpg HA).
-- Pool factory kwargs type: `AsyncpgPoolFactoryKwargs` (to pass `init` or other pool options to the driver/manager).
-- Built-in config providers — `AsyncpgPostgresDatabaseConfigProvider` and `AsyncpgHAPostgresDatabaseConfigProvider` — read settings from `ApplicationDictConfig['postgres']`, which is loaded by `YAMLConfigurationService` from your YAML file.
-- A built-in pool kwargs provider returns an empty `AsyncpgPoolFactoryKwargs` by default; you can override it to customize connection initialization (see Advanced setup).
+- Connection config types: [`AsyncpgPostgresDatabaseConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/config.py) (for asyncpg) and [`AsyncpgHAPostgresDatabaseConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg_ha/config.py) (for asyncpg HA).
+- Pool factory kwargs type: [`AsyncpgPoolFactoryKwargs`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/config.py) (to pass `init` or other pool options to the driver/manager).
+- Built-in config providers — [`AsyncpgPostgresDatabaseConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/providers.py) and [`AsyncpgHAPostgresDatabaseConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg_ha/providers.py) — read settings from `ApplicationDictConfig['postgres']`, which is loaded by [`YAMLConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/service/configuration.py) from your YAML file.
+- A built-in pool kwargs provider returns an empty [`AsyncpgPoolFactoryKwargs`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/config.py) by default; you can override it to customize connection initialization (see [Advanced setup](#advanced-setup)).
 
 Typical pattern:
-- Use `PostgresDatabaseAdapter` when you don't need explicit transaction management: it's suitable for any reads and writes.
-- When you need transactional boundaries, get `PostgresTransactionDatabaseAdapter`, call `start_transaction()`/`commit_transaction()` (or `rollback_transaction()` on error), and run your operations within that transaction.
+- Use [`PostgresDatabaseAdapter`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/infrastructure/db/postgres/adapters/interface.py) when you don't need explicit transaction management: it's suitable for any reads and writes.
+- When you need transactional boundaries, get [`PostgresTransactionDatabaseAdapter`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/infrastructure/db/postgres/adapters/interface.py), call `start_transaction()`/`commit_transaction()` (or `rollback_transaction()` on error), and run your operations within that transaction.
 
-Configuration can be loaded from YAML via `YAMLConfigurationService` under the `postgres:` key. Optional connection initialization (e.g., custom codecs or `search_path`) can be provided through `AsyncpgPoolFactoryKwargs` in DI; this works for both `asyncpg` and `hasql` variants.
+Configuration can be loaded from YAML via [`YAMLConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/service/configuration.py) under the `postgres:` key. Optional connection initialization (e.g., custom codecs or `search_path`) can be provided through [`AsyncpgPoolFactoryKwargs`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/config.py) in DI; this works for both `asyncpg` and `hasql` variants.
 
 ### Single-node PostgreSQL (asyncpg)
 
 Provides:
-- Providers: `AsyncpgPostgresDatabaseProvider`, `AsyncpgPostgresDatabaseConfigProvider`.
+- Providers: [`AsyncpgPostgresDatabaseProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/providers.py), [`AsyncpgPostgresDatabaseConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/providers.py).
 - Convenience services to plug into `Application`:
-  - `AsyncpgPostgresDatabaseService` — pool and adapters,
-  - `AsyncpgPostgresDatabaseConfigurationService` — loads config from `ApplicationDictConfig`.
+  - [`AsyncpgPostgresDatabaseService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/service.py) — pool and adapters,
+  - [`AsyncpgPostgresDatabaseConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/service.py) — loads config from `ApplicationDictConfig`.
 - Adapters:
-  - `PostgresDatabaseAdapter` with scope=APP — general-purpose adapter for any operations (fetch/fetch_one/execute, ...).
-  - `PostgresTransactionDatabaseAdapter` with scope=REQUEST (handy for HTTP requests) — same API plus transaction control methods (start/commit/rollback).
+  - [`PostgresDatabaseAdapter`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/infrastructure/db/postgres/adapters/interface.py) with scope=APP — general-purpose adapter for any operations (fetch/fetch_one/execute, ...).
+  - [`PostgresTransactionDatabaseAdapter`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/infrastructure/db/postgres/adapters/interface.py) with scope=REQUEST (handy for HTTP requests) — same API plus transaction control methods (start/commit/rollback).
 
 YAML config example:
 
@@ -542,13 +542,13 @@ class UnitOfWork:
 If you run an HA cluster (multiple nodes), use the hasql integration.
 
 Provides:
-- Providers: `AsyncpgHAPostgresDatabaseProvider`, `AsyncpgHAPostgresDatabaseConfigProvider`.
+- Providers: [`AsyncpgHAPostgresDatabaseProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg_ha/providers.py), [`AsyncpgHAPostgresDatabaseConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg_ha/providers.py).
 - Convenience services to plug into `Application`:
-  - `AsyncpgHAPostgresDatabaseService` — pool and adapters,
-  - `AsyncpgHAPostgresDatabaseConfigurationService` — loads config from `ApplicationDictConfig`.
+  - [`AsyncpgHAPostgresDatabaseService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg_ha/service.py) — pool and adapters,
+  - [`AsyncpgHAPostgresDatabaseConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg_ha/service.py) — loads config from `ApplicationDictConfig`.
 - Adapters:
-  - `PostgresDatabaseAdapter` with scope=APP — general-purpose adapter for any operations (fetch/fetch_one/execute, ...).
-  - `PostgresTransactionDatabaseAdapter` with scope=REQUEST (handy for HTTP requests) — same API plus transaction control methods (start/commit/rollback).
+  - [`PostgresDatabaseAdapter`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/infrastructure/db/postgres/adapters/interface.py) with scope=APP — general-purpose adapter for any operations (fetch/fetch_one/execute, ...).
+  - [`PostgresTransactionDatabaseAdapter`](https://github.com/Fatal1ty/operetta/blob/main/operetta/ddd/infrastructure/db/postgres/adapters/interface.py) with scope=REQUEST (handy for HTTP requests) — same API plus transaction control methods (start/commit/rollback).
 
 YAML config example:
 
@@ -630,12 +630,12 @@ app = Application(
 ```
 
 > [!IMPORTANT]\
-> If you use the built-in `AsyncpgPostgresDatabaseConfigurationService` or
-> `AsyncpgHAPostgresDatabaseConfigurationService`, they already register a
-> default provider for `AsyncpgPoolFactoryKwargs`. To customize pool options,
+> If you use the built-in [`AsyncpgPostgresDatabaseConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/service.py) or
+> [`AsyncpgHAPostgresDatabaseConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg_ha/service.py), they already register a
+> default provider for [`AsyncpgPoolFactoryKwargs`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/config.py). To customize pool options,
 > declare your provider with `@provide(override=True)` so it overrides the
 > built-in one; otherwise container validation will fail.\
-> When you provide your own `AsyncpgPoolFactoryKwargs` and there is an existing
+> When you provide your own [`AsyncpgPoolFactoryKwargs`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/config.py) and there is an existing
 > default provider from those services, `override=True` is mandatory.
 
 Define your own config providers (e.g., from environment variables) if you don't want to use YAML-based ones:
@@ -710,5 +710,4 @@ app = Application(
     AsyncpgHAPostgresDatabaseService(),
     di_providers=[EnvHasqlConfigProvider()],
 )
-
 ```
