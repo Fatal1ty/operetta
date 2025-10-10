@@ -2,7 +2,7 @@
 
 <img alt="logo" width="175" src="https://raw.githubusercontent.com/Fatal1ty/operetta/7e3e80a54dfc91673dacb36a64c1379aae36a042/img/logo.png">
 
-###### Build apps. Zero fuss.
+###### Design Python services right
 
 [![Build Status](https://github.com/Fatal1ty/operetta/workflows/tests/badge.svg)](https://github.com/Fatal1ty/operetta/actions)
 [![Latest Version](https://img.shields.io/pypi/v/operetta.svg)](https://pypi.python.org/pypi/operetta)
@@ -272,7 +272,7 @@ You can configure `AIOHTTPService` in three complementary ways:
 - Via custom DI providers — e.g., environment variables or secrets managers.
 
 Precedence rule:
-- `__init__` > DI (`AIOHTTPServiceConfigProvider`) > internal defaults
+- `__init__` → DI (`AIOHTTPServiceConfigProvider`) → internal defaults
 
 > [!TIP]
 > - `AIOHTTPConfigurationService` is a helper that installs `AIOHTTPServiceConfigProvider` into DI.
