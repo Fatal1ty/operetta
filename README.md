@@ -258,7 +258,7 @@ Precedence rule:
 - `__init__` > DI (`AIOHTTPServiceConfigProvider`) > internal defaults
 
 > [!TIP]
-> - `AIOHTTPConfigurationService` is an optional helper that installs `AIOHTTPServiceConfigProvider` into DI.
+> - `AIOHTTPConfigurationService` is a helper that installs `AIOHTTPServiceConfigProvider` into DI.
 > - This provider reads `ApplicationDictConfig['api']` and decodes it into `AIOHTTPServiceConfig`.
 > - YAML is not required. You can provide `AIOHTTPServiceConfig` via any DI provider.
 
