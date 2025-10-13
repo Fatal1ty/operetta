@@ -1,7 +1,7 @@
 [project]
 name = "operetta"
 version = "0.0.9"
-description = ""
+description = "A lightweight framework for building Python applications that is not tied to a specific transport protocol"
 authors = [
     {name = "Alexander Tikhonov",email = "random.gauss@gmail.com"}
 ]
