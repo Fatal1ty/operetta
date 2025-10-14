@@ -17,6 +17,7 @@ A lightweight framework for building Python applications that is not tied to a s
 - [AIOHTTP](https://github.com/aio-libs/aiohttp): declarative handlers with DI for request body, query, and path params; automatic OpenAPI generation with [Swagger](https://github.com/swagger-api/swagger-ui) and [Redoc](https://github.com/Redocly/redoc).
 - PostgreSQL via [asyncpg](https://github.com/MagicStack/asyncpg): a database adapter and DI provider for a connection pool.
 - PostgreSQL with HA via [hasql](https://github.com/aiokitchen/hasql): a pool with balancing, failover and the same adapter layer.
+- Error monitoring via [Sentry](https://sentry.io/) using [sentry-sdk](https://github.com/getsentry/sentry-python).
 
 
 ## Table of contents
@@ -30,6 +31,9 @@ A lightweight framework for building Python applications that is not tied to a s
 - [AIOHTTP](#aiohttp)
   - [Configuration](#configuration)
   - [Error handling and response format](#error-handling-and-response-format)
+- [Sentry](#sentry)
+  - [Configuration](#configuration-1)
+  - [Behavior and notes](#behavior-and-notes)
 - [PostgreSQL](#postgresql)
   - [Single-node PostgreSQL (asyncpg)](#single-node-postgresql-asyncpg)
   - [High-availability PostgreSQL cluster (hasql)](#high-availability-postgresql-cluster-hasql)
@@ -45,6 +49,7 @@ A lightweight framework for building Python applications that is not tied to a s
   - Unified JSON envelope for responses.
   - OpenAPI generation with static assets for Swagger/Redoc.
 - PostgreSQL integrations ([asyncpg](https://github.com/MagicStack/asyncpg)/[hasql](https://github.com/aiokitchen/hasql)): interface adapter `PostgresDatabaseAdapter` + transactional `PostgresTransactionDatabaseAdapter` for repositories and units of work.
+- Sentry integration: simple, configurable initialization of [sentry-sdk](https://github.com/getsentry/sentry-python).
 
 ## Installation
 
@@ -72,6 +77,12 @@ pip install 'operetta[asyncpg]'
 
 ```bash
 pip install 'operetta[hasql]'
+```
+
+- With Sentry:
+
+```bash
+pip install 'operetta[sentry]'
 ```
 
 ## Quickstart (HTTP API)
@@ -427,6 +438,108 @@ Advanced
 - Two middlewares are installed by default:
   - [`ddd_errors_middleware`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/middlewares.py) maps DDD exceptions to HTTP errors above.
   - [`unhandled_error_middleware`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/middlewares.py) catches all other exceptions and returns a generic 500 with a safe message.
+
+## Sentry
+
+A built-in integration that initializes [sentry-sdk](https://github.com/getsentry/sentry-python) with a logging integration for breadcrumbs and error events. It’s optional and configured via DI and/or constructor parameters.
+
+Provided components:
+- [`SentryService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/service.py) — initializes the SDK on start and closes the client on stop.
+- [`SentryConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/service.py) — registers a config provider into DI.
+- [`SentryServiceConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/providers.py) — reads `ApplicationDictConfig['sentry']` and decodes it into [`SentryServiceConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/config.py).
+
+Install extra:
+
+```bash
+pip install 'operetta[sentry]'
+```
+
+How to wire it up:
+
+```python
+from operetta.app import Application
+from operetta.service.configuration import YAMLConfigurationService
+from operetta.integrations.sentry import (
+    SentryService,
+    SentryConfigurationService,
+)
+
+app = Application(
+    YAMLConfigurationService(),          # optional: load YAML into DI
+    SentryConfigurationService(),        # installs SentryServiceConfigProvider
+    SentryService(
+        # You can override any config here; constructor wins over DI
+        # send_default_pii=False,
+        # debug=False,
+    ),
+)
+```
+
+### Configuration
+
+- Constructor (`SentryService.__init__`) — highest priority.
+- DI (`SentryServiceConfig` resolved from provider) — overrides defaults.
+- Internal defaults — used if neither of the above specify a value.
+
+YAML config (all keys are optional) under `sentry:` section:
+
+```yaml
+sentry:
+  dsn: https://public@o0.ingest.sentry.io/0
+  enabled: true
+
+  # Logging integration
+  capture_log_level: ERROR      # event level (string or int)
+  context_log_level: INFO       # breadcrumbs level (string or int)
+  ignore_loggers:               # loggers to exclude from breadcrumbs/events
+    - aiohttp.access
+
+  # Core SDK options
+  environment: production
+  release: 1.2.3
+  server_name: api-01
+
+  include_local_variables: true
+  max_breadcrumbs: 100
+  shutdown_timeout: 2.0
+
+  # Sampling
+  sample_rate: 1.0              # error event sampling
+  traces_sample_rate: 0.2       # performance tracing sampling
+
+  # Error filtering and in-app
+  ignore_errors:
+    - TimeoutError
+  in_app_include:
+    - myapp
+  in_app_exclude:
+    - aiohttp
+
+  # Privacy / debug
+  send_default_pii: false
+  debug: false
+
+  # HTTP body and propagation
+  max_request_body_size: medium
+  trace_propagation_targets:
+    - .*
+
+  # Transport tweaks
+  keep_alive: false
+
+  # Anything else passed to sentry_sdk.init (overrides same-named keys above)
+  extra_options:
+    profiles_sample_rate: 0.1
+```
+
+### Behavior and notes
+
+If `enabled: false` or no `dsn` is provided, Sentry is skipped (a message is logged).
+
+All other parameters rely on the defaults defined by `sentry-sdk` itself. Operetta does not override those internal defaults: if you do not set a field in `SentryServiceConfig` and do not provide it via `extra_options`, the behavior is identical to calling `sentry_sdk.init` without that argument. See the official documentation for the full list of options and their default values:
+https://docs.sentry.io/platforms/python/configuration/options/
+
+The `extra_options` parameter lets you supply any additional keys for `sentry_sdk.init` that do not have a dedicated field in `SentryServiceConfig`. These keys are merged last (overriding same-named ones) into the final options dict passed to the SDK.
 
 ## PostgreSQL
 
