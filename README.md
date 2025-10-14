@@ -613,14 +613,14 @@ Plug into the app:
 from operetta.app import Application
 from operetta.service.configuration import YAMLConfigurationService
 from operetta.integrations.asyncpg.service import (
+    AsyncpgPostgresDatabaseConfigProvider,
     AsyncpgPostgresDatabaseService,
-    AsyncpgPostgresDatabaseConfigurationService,
 )
 
 app = Application(
     YAMLConfigurationService(),
-    AsyncpgPostgresDatabaseConfigurationService(),
     AsyncpgPostgresDatabaseService(),
+    di_providers=[AsyncpgPostgresDatabaseConfigProvider()],
 )
 ```
 
@@ -704,14 +704,14 @@ Plug into the app:
 from operetta.app import Application
 from operetta.service.configuration import YAMLConfigurationService
 from operetta.integrations.asyncpg_ha.service import (
+    AsyncpgHAPostgresDatabaseConfigProvider,
     AsyncpgHAPostgresDatabaseService,
-    AsyncpgHAPostgresDatabaseConfigurationService,
 )
 
 app = Application(
     YAMLConfigurationService(),
-    AsyncpgHAPostgresDatabaseConfigurationService(),
     AsyncpgHAPostgresDatabaseService(),
+    di_providers=[AsyncpgHAPostgresDatabaseConfigProvider()],
 )
 ```
 
@@ -729,7 +729,7 @@ from operetta.app import Application
 from operetta.service.configuration import YAMLConfigurationService
 from operetta.integrations.asyncpg.config import AsyncpgPoolFactoryKwargs
 from operetta.integrations.asyncpg_ha.service import (
-    AsyncpgHAPostgresDatabaseConfigurationService,
+    AsyncpgHAPostgresDatabaseConfigProvider,
     AsyncpgHAPostgresDatabaseService,
 )
 
@@ -749,15 +749,17 @@ class AsyncpgJSONCodecProvider(Provider):
 
 app = Application(
     YAMLConfigurationService(),
-    AsyncpgHAPostgresDatabaseConfigurationService(),
     AsyncpgHAPostgresDatabaseService(),
-    di_providers=[AsyncpgJSONCodecProvider()],
+    di_providers=[
+        AsyncpgHAPostgresDatabaseConfigProvider(),
+        AsyncpgJSONCodecProvider(),
+    ],
 )
 ```
 
 > [!IMPORTANT]\
-> If you use the built-in [`AsyncpgPostgresDatabaseConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/service.py) or
-> [`AsyncpgHAPostgresDatabaseConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg_ha/service.py), they already register a
+> If you use the built-in [`AsyncpgPostgresDatabaseConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/providers.py) or
+> [`AsyncpgHAPostgresDatabaseConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg_ha/providers.py), they already register a
 > default provider for [`AsyncpgPoolFactoryKwargs`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/asyncpg/config.py). To customize pool options,
 > declare your provider with `@provide(override=True)` so it overrides the
 > built-in one; otherwise container validation will fail.\
