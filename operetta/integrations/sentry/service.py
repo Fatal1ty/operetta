@@ -146,7 +146,7 @@ class SentryService(Service):
         # Track which fields the user explicitly set (different from defaults)
         self._user_set: set[str] = set()
         for f in fields(SentryServiceConfig):
-            if getattr(self._config, f.name) is not _S.MISSING:
+            if getattr(self._config, f.name) is not None:
                 self._user_set.add(f.name)
 
         self._client: BaseClient | None = None
