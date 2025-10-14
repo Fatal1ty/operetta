@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Any
 
 
 @dataclass
@@ -43,7 +43,7 @@ class SentryServiceConfig:
 
     # HTTP body and propagation
     max_request_body_size: str | None = None
-    trace_propagation_targets: Iterable[str] | None = None
+    trace_propagation_targets: list[str] | None = None
 
     # Transport tweaks
     keep_alive: bool | None = None
