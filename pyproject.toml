@@ -72,6 +72,7 @@ dependencies = [
 aiohttp = ["aiohttp (>=3.12.15,<4.0.0)", "openapify (>=0.7,<0.8)", "orjson (>=3.11.3,<4.0.0)"]
 asyncpg = ["asyncpg (>=0.30.0,<0.31.0)"]
 hasql = ["hasql (>=0.8.1,<0.9.0)"]
+sentry = ["sentry-sdk (>=2.41.0,<3.0.0)"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
