@@ -461,17 +461,17 @@ from operetta.app import Application
 from operetta.service.configuration import YAMLConfigurationService
 from operetta.integrations.sentry import (
     SentryService,
-    SentryConfigurationService,
+    SentryServiceConfigProvider,
 )
 
 app = Application(
     YAMLConfigurationService(),          # optional: load YAML into DI
-    SentryConfigurationService(),        # installs SentryServiceConfigProvider
     SentryService(
         # You can override any config here; constructor wins over DI
         # send_default_pii=False,
         # debug=False,
     ),
+    di_providers=[SentryServiceConfigProvider()]
 )
 ```
 
