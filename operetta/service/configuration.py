@@ -67,10 +67,16 @@ class YAMLConfigurationService(Service):
         pass
 
     async def get_di_providers(self) -> Sequence[dishka.Provider]:
+        providers = []
         dict_config_provider = dishka.Provider(scope=dishka.Scope.APP)
         dict_config_provider.provide(
             lambda: self.config_dict, provides=ApplicationDictConfig
         )
-        config_provider = dishka.Provider(scope=dishka.Scope.APP)
-        config_provider.provide(lambda: self.config, provides=self.config_cls)
-        return [dict_config_provider, config_provider]
+        providers.append(dict_config_provider)
+        if self.config_cls is not ApplicationDictConfig:
+            config_provider = dishka.Provider(scope=dishka.Scope.APP)
+            config_provider.provide(
+                lambda: self.config, provides=self.config_cls
+            )
+            providers.append(config_provider)
+        return providers

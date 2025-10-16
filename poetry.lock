@@ -1197,6 +1197,22 @@ dev = ["pre-commit", "tox"]
 testing = ["coverage", "pytest", "pytest-benchmark"]
 
 [[package]]
+name = "prometheus-client"
+version = "0.23.1"
+description = "Python client for the Prometheus monitoring system."
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "extra == \"prometheus\""
+files = [
+    {file = "prometheus_client-0.23.1-py3-none-any.whl", hash = "sha256:dd1913e6e76b59cfe44e7a4b83e01afc9873c1bdfd2ed8739f1e76aeca115f99"},
+    {file = "prometheus_client-0.23.1.tar.gz", hash = "sha256:6ae8f9081eaaaf153a2e959d2e6c4f4fb57b12ef76c8c7980202f1e57b48b2ce"},
+]
+
+[package.extras]
+twisted = ["twisted"]
+
+[[package]]
 name = "propcache"
 version = "0.4.1"
 description = "Accelerated property cache"
@@ -1810,9 +1826,10 @@ propcache = ">=0.2.1"
 aiohttp = ["aiohttp", "openapify", "orjson"]
 asyncpg = ["asyncpg"]
 hasql = ["hasql"]
+prometheus = ["prometheus-client"]
 sentry = ["sentry-sdk"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "783dfb93dad0f5de807025b3dddd2dedd605652f2976bda74cbfeb71b89ceb80"
+content-hash = "0dab5789f541d216e778b5dea68085be98f6ed51729c99e70a0532cd44765fac"
