@@ -143,6 +143,7 @@ class PrometheusService(Service):
 
         method = "-"
         path = "-"
+        client_name = "-"
 
         try:
             request_data = await reader.readuntil(b"\r\n\r\n")
@@ -156,14 +157,37 @@ class PrometheusService(Service):
                 path,
                 start_time,
                 remote,
+                client_name,
             )
             return
-        # Parse request line
+        # Parse request line and headers
         try:
             header_text = request_data.decode("latin-1", errors="replace")
-            request_line = header_text.split("\r\n", 1)[0]
+            lines = header_text.split("\r\n")
+            request_line = lines[0]
             method, raw_path, _ = request_line.split(" ", 2)
             path = raw_path.split("?", 1)[0]
+
+            # simple header parsing (case-insensitive)
+            headers: dict[str, str] = {}
+            for line in lines[1:]:
+                if not line:
+                    break
+                if ":" not in line:
+                    continue
+                k, v = line.split(":", 1)
+                headers[k.strip().lower()] = v.strip()
+
+            # choose best-effort client identifier
+            client_name = (
+                headers.get("x-client-name")
+                or headers.get("x-service-name")
+                or headers.get("user-agent")
+                or "-"
+            )
+            # keep log line compact
+            if len(client_name) > 200:
+                client_name = client_name[:200] + "…"
         except Exception:
             await self._send_response(
                 writer,
@@ -174,6 +198,7 @@ class PrometheusService(Service):
                 path,
                 start_time,
                 remote,
+                client_name,
             )
             return
 
@@ -188,6 +213,7 @@ class PrometheusService(Service):
                 path,
                 start_time,
                 remote,
+                client_name,
             )
             return
 
@@ -204,6 +230,7 @@ class PrometheusService(Service):
                 path,
                 start_time,
                 remote,
+                client_name,
             )
             return
 
@@ -221,6 +248,7 @@ class PrometheusService(Service):
                 path,
                 start_time,
                 remote,
+                client_name,
             )
             return
 
@@ -238,6 +266,7 @@ class PrometheusService(Service):
             path,
             start_time,
             remote,
+            client_name,
         )
 
     async def _send_response(
@@ -250,17 +279,19 @@ class PrometheusService(Service):
         path: str,
         start_time: float,
         remote: str,
+        client: str,
     ) -> None:
         await self._write_response(writer, status, body, headers)
         duration_ms = (self.loop.time() - start_time) * 1000.0
         log.info(
-            "prometheus %s %s -> %d %dB in %.1fms from %s",
+            "prometheus %s %s -> %d %dB in %.1fms from %s %s",
             method,
             path,
             status,
             len(body),
             duration_ms,
             remote,
+            client,
         )
 
     async def _write_response(
