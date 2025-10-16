@@ -18,7 +18,7 @@ A lightweight framework for building Python applications that is not tied to a s
 - PostgreSQL via [asyncpg](https://github.com/MagicStack/asyncpg): a database adapter and DI provider for a connection pool.
 - PostgreSQL with HA via [hasql](https://github.com/aiokitchen/hasql): a pool with balancing, failover and the same adapter layer.
 - Error monitoring via [Sentry](https://sentry.io/) using [sentry-sdk](https://github.com/getsentry/sentry-python).
-
+- Prometheus metrics via [prometheus-client](https://github.com/prometheus/client_python): expose metrics over HTTP for scraping.
 
 ## Table of contents
 
@@ -31,13 +31,16 @@ A lightweight framework for building Python applications that is not tied to a s
 - [AIOHTTP](#aiohttp)
   - [Configuration](#configuration)
   - [Error handling and response format](#error-handling-and-response-format)
-- [Sentry](#sentry)
-  - [Configuration](#configuration-1)
-  - [Behavior and notes](#behavior-and-notes)
 - [PostgreSQL](#postgresql)
   - [Single-node PostgreSQL (asyncpg)](#single-node-postgresql-asyncpg)
   - [High-availability PostgreSQL cluster (hasql)](#high-availability-postgresql-cluster-hasql)
   - [Advanced setup](#advanced-setup)
+- [Sentry](#sentry)
+  - [Configuration](#configuration-1)
+  - [Behavior and notes](#behavior-and-notes)
+- [Prometheus](#prometheus)
+  - [Configuration](#configuration-2)
+  - [Usage](#usage)
 
 ## Highlights
 
@@ -50,6 +53,7 @@ A lightweight framework for building Python applications that is not tied to a s
   - OpenAPI generation with static assets for Swagger/Redoc.
 - PostgreSQL integrations ([asyncpg](https://github.com/MagicStack/asyncpg)/[hasql](https://github.com/aiokitchen/hasql)): interface adapter `PostgresDatabaseAdapter` + transactional `PostgresTransactionDatabaseAdapter` for repositories and units of work.
 - Sentry integration: simple, configurable initialization of [sentry-sdk](https://github.com/getsentry/sentry-python).
+- Prometheus integration: scrape metrics from a built-in HTTP endpoint; zero dependencies on third-party web frameworks.
 
 ## Installation
 
@@ -83,6 +87,12 @@ pip install 'operetta[hasql]'
 
 ```bash
 pip install 'operetta[sentry]'
+```
+
+- With Prometheus:
+
+```bash
+pip install 'operetta[prometheus]'
 ```
 
 ## Quickstart (HTTP API)
@@ -284,7 +294,7 @@ Provided components:
 Install extra:
 
 ```bash
-pip install 'operetta[sentry]'
+pip install 'operetta[aiohttp]'
 ```
 
 How to wire it up:
@@ -374,8 +384,6 @@ app = Application(
 )
 ```
 
-Under the hood [`AIOHTTPService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/service.py) tries to resolve [`AIOHTTPServiceConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/config.py) from DI on start; if available, it merges values with the precedence above and continues startup as usual.
-
 ### Error handling and response format
 
 - Successful responses are automatically wrapped into `{ "success": true, "data": ..., "error": null }`.
@@ -451,108 +459,6 @@ Advanced
 - Two middlewares are installed by default:
   - [`ddd_errors_middleware`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/middlewares.py) maps DDD exceptions to HTTP errors above.
   - [`unhandled_error_middleware`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/middlewares.py) catches all other exceptions and returns a generic 500 with a safe message.
-
-## Sentry
-
-A built-in integration that initializes [sentry-sdk](https://github.com/getsentry/sentry-python) with a logging integration for breadcrumbs and error events. It’s optional and configured via DI and/or constructor parameters.
-
-Provided components:
-- [`SentryService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/service.py) — initializes the SDK on start and closes the client on stop.
-- [`SentryConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/service.py) — registers a config provider into DI.
-- [`SentryServiceConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/providers.py) — reads `ApplicationDictConfig['sentry']` and decodes it into [`SentryServiceConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/config.py).
-
-Install extra:
-
-```bash
-pip install 'operetta[sentry]'
-```
-
-How to wire it up:
-
-```python
-from operetta.app import Application
-from operetta.service.configuration import YAMLConfigurationService
-from operetta.integrations.sentry import (
-    SentryService,
-    SentryServiceConfigProvider,
-)
-
-app = Application(
-    YAMLConfigurationService(),          # optional: load YAML into DI
-    SentryService(
-        # You can override any config here; constructor wins over DI
-        # send_default_pii=False,
-        # debug=False,
-    ),
-    di_providers=[SentryServiceConfigProvider()]
-)
-```
-
-### Configuration
-
-- Constructor (`SentryService.__init__`) — highest priority.
-- DI (`SentryServiceConfig` resolved from provider) — overrides defaults.
-- Internal defaults — used if neither of the above specify a value.
-
-YAML config (all keys are optional) under `sentry:` section:
-
-```yaml
-sentry:
-  dsn: https://public@o0.ingest.sentry.io/0
-  enabled: true
-
-  # Logging integration
-  capture_log_level: ERROR      # event level (string or int)
-  context_log_level: INFO       # breadcrumbs level (string or int)
-  ignore_loggers:               # loggers to exclude from breadcrumbs/events
-    - aiohttp.access
-
-  # Core SDK options
-  environment: production
-  release: 1.2.3
-  server_name: api-01
-
-  include_local_variables: true
-  max_breadcrumbs: 100
-  shutdown_timeout: 2.0
-
-  # Sampling
-  sample_rate: 1.0              # error event sampling
-  traces_sample_rate: 0.2       # performance tracing sampling
-
-  # Error filtering and in-app
-  ignore_errors:
-    - TimeoutError
-  in_app_include:
-    - myapp
-  in_app_exclude:
-    - aiohttp
-
-  # Privacy / debug
-  send_default_pii: false
-  debug: false
-
-  # HTTP body and propagation
-  max_request_body_size: medium
-  trace_propagation_targets:
-    - .*
-
-  # Transport tweaks
-  keep_alive: false
-
-  # Anything else passed to sentry_sdk.init (overrides same-named keys above)
-  extra_options:
-    profiles_sample_rate: 0.1
-```
-
-### Behavior and notes
-
-If `enabled: false` or no `dsn` is provided, Sentry is skipped (a message is logged).
-
-All other parameters rely on the defaults defined by `sentry-sdk` itself. Operetta does not override those internal defaults: if you do not set a field in `SentryServiceConfig` and do not provide it via `extra_options`, the behavior is identical to calling `sentry_sdk.init` without that argument. See the official documentation for the full list of options and their default values:
-https://docs.sentry.io/platforms/python/configuration/options/
-
-The `extra_options` parameter lets you supply any additional keys for `sentry_sdk.init` that do not have a dedicated field in `SentryServiceConfig`. These keys are merged last (overriding same-named ones) into the final options dict passed to the SDK.
 
 ## PostgreSQL
 
@@ -839,3 +745,254 @@ app = Application(
     di_providers=[EnvHasqlConfigProvider()],
 )
 ```
+
+## Sentry
+
+A built-in integration that initializes [sentry-sdk](https://github.com/getsentry/sentry-python) with a logging integration for breadcrumbs and error events. It’s optional and configured via DI and/or constructor parameters.
+
+Provided components:
+- [`SentryService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/service.py) — initializes the SDK on start and closes the client on stop.
+- [`SentryConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/service.py) — registers a config provider into DI.
+- [`SentryServiceConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/providers.py) — reads `ApplicationDictConfig['sentry']` and decodes it into [`SentryServiceConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/config.py).
+
+Install extra:
+
+```bash
+pip install 'operetta[sentry]'
+```
+
+How to wire it up:
+
+```python
+from operetta.app import Application
+from operetta.service.configuration import YAMLConfigurationService
+from operetta.integrations.sentry import (
+    SentryService,
+    SentryServiceConfigProvider,
+)
+
+app = Application(
+    YAMLConfigurationService(),          # optional: load YAML into DI
+    SentryService(
+        # You can override any config here; constructor wins over DI
+        # send_default_pii=False,
+        # debug=False,
+    ),
+    di_providers=[SentryServiceConfigProvider()]
+)
+```
+
+### Configuration
+
+You can configure [`SentryService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/sentry/service.py) in three complementary ways:
+
+- Constructor (`SentryService.__init__`) — highest priority.
+- DI (`SentryServiceConfig` resolved from provider) — overrides defaults.
+- Internal defaults — used if neither of the above specify a value.
+
+YAML keys (all optional) live under the `sentry:` section:
+
+```yaml
+sentry:
+  dsn: https://public@o0.ingest.sentry.io/0
+  enabled: true
+
+  # Logging integration
+  capture_log_level: ERROR      # event level (string or int)
+  context_log_level: INFO       # breadcrumbs level (string or int)
+  ignore_loggers:               # loggers to exclude from breadcrumbs/events
+    - aiohttp.access
+
+  # Core SDK options
+  environment: production
+  release: 1.2.3
+  server_name: api-01
+
+  include_local_variables: true
+  max_breadcrumbs: 100
+  shutdown_timeout: 2.0
+
+  # Sampling
+  sample_rate: 1.0              # error event sampling
+  traces_sample_rate: 0.2       # performance tracing sampling
+
+  # Error filtering and in-app
+  ignore_errors:
+    - TimeoutError
+  in_app_include:
+    - myapp
+  in_app_exclude:
+    - aiohttp
+
+  # Privacy / debug
+  send_default_pii: false
+  debug: false
+
+  # HTTP body and propagation
+  max_request_body_size: medium
+  trace_propagation_targets:
+    - .*
+
+  # Transport tweaks
+  keep_alive: false
+
+  # Anything else passed to sentry_sdk.init (overrides same-named keys above)
+  extra_options:
+    profiles_sample_rate: 0.1
+```
+
+Custom config provider example (env-vars):
+
+```python
+import os
+from dishka import Provider, Scope, provide
+from operetta.app import Application
+from operetta.integrations.sentry.config import SentryServiceConfig
+from operetta.integrations.sentry import SentryService
+
+class EnvSentryConfigProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    def get_config(self) -> SentryServiceConfig:
+        return SentryServiceConfig(
+            dsn=os.getenv("SENTRY_DSN"),
+            enabled=os.getenv("SENTRY_ENABLED", "true").lower() == "true",
+        )
+
+app = Application(
+    SentryService(),
+    di_providers=[EnvSentryConfigProvider()],
+)
+```
+
+### Behavior and notes
+
+If `enabled: false` or no `dsn` is provided, Sentry is skipped (a message is logged).
+
+All other parameters rely on the defaults defined by `sentry-sdk` itself. Operetta does not override those internal defaults: if you do not set a field in `SentryServiceConfig` and do not provide it via `extra_options`, the behavior is identical to calling `sentry_sdk.init` without that argument. See the official documentation for the full list of options and their default values:
+https://docs.sentry.io/platforms/python/configuration/options/
+
+The `extra_options` parameter lets you supply any additional keys for `sentry_sdk.init` that do not have a dedicated field in `SentryServiceConfig`. These keys are merged last (overriding same-named ones) into the final options dict passed to the SDK.
+
+## Prometheus
+
+Expose Prometheus metrics over HTTP with zero dependencies on third-party web frameworks. The service uses Python's standard library (asyncio.start_server) to serve metrics efficiently in asyncio environments.
+
+Provided components:
+- [`PrometheusService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/prometheus/service.py) — a tiny asyncio HTTP server exposing metrics on a configured endpoint.
+- [`PrometheusConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/prometheus/service.py) — registers a config provider into DI.
+- [`PrometheusServiceConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/prometheus/providers.py) — reads `ApplicationDictConfig['prometheus']` and decodes it into [`PrometheusServiceConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/prometheus/config.py).
+
+Install extra:
+
+```bash
+pip install 'operetta[prometheus]'
+```
+
+How to wire it up:
+
+```python
+from operetta.app import Application
+from operetta.service.configuration import YAMLConfigurationService
+from operetta.integrations.prometheus import (
+    PrometheusService,
+    PrometheusServiceConfigProvider,
+)
+
+app = Application(
+    YAMLConfigurationService(),
+    PrometheusService(),  # constructor args override YAML
+    di_providers=[PrometheusServiceConfigProvider()],
+)
+```
+
+### Configuration
+
+You can configure [`PrometheusService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/prometheus/service.py) in three complementary ways:
+
+- Constructor (`PrometheusService.__init__`) — highest priority.
+- DI (`PrometheusServiceConfig` resolved from provider) — overrides defaults.
+- Internal defaults — used if neither of the above specify a value.
+
+YAML keys (all optional) live under the `prometheus:` section:
+
+```yaml
+prometheus:
+  address: 0.0.0.0
+  port: 9000
+  endpoint: /metrics
+  enabled: true
+```
+
+Custom config provider example (env-vars):
+
+```python
+import os
+from dishka import Provider, Scope, provide
+from operetta import Application
+from operetta.integrations.prometheus.config import PrometheusServiceConfig
+from operetta.integrations.prometheus import PrometheusService
+
+class EnvPromConfigProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    def get_config(self) -> PrometheusServiceConfig:
+        return PrometheusServiceConfig(
+            address=os.getenv("PROM_ADDRESS", "0.0.0.0"),
+            port=int(os.getenv("PROM_PORT", "9000")),
+            endpoint=os.getenv("PROM_ENDPOINT", "/metrics"),
+            enabled=os.getenv("PROM_ENABLED", "true").lower() == "true",
+        )
+
+app = Application(
+    PrometheusService(),
+    di_providers=[EnvPromConfigProvider()],
+)
+```
+
+### Usage
+
+- By default, the global Prometheus registry is used. If you want a custom registry, provide one via DI:
+
+```python
+from operetta import Application
+from operetta.integrations.prometheus import PrometheusService
+from dishka import Provider, Scope, provide
+from prometheus_client import CollectorRegistry
+
+class PromRegistryProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    def get_registry(self) -> CollectorRegistry:
+        return CollectorRegistry()
+
+app = Application(
+    PrometheusService(),
+    di_providers=[PromRegistryProvider()],
+)
+```
+
+- Create and register metrics as usual using prometheus-client; they will be collected from the registry the service uses (global by default, or your DI-provided one):
+
+```python
+from prometheus_client import Counter, REGISTRY
+
+# Using default (global) registry
+REQUESTS = Counter('http_requests_total', 'Count of HTTP requests')
+REQUESTS.inc()
+
+# If you provided a custom registry, pass it explicitly when creating metrics:
+from prometheus_client import Counter, CollectorRegistry
+registry = CollectorRegistry()
+CUSTOM_COUNTER = Counter('my_counter', 'Help', registry=registry)
+CUSTOM_COUNTER.inc()
+```
+
+- HTTP details:
+  - Methods: GET and HEAD.
+  - Path match ignores query string (e.g., `/metrics?format=...`).
+  - Content-Type is set to Prometheus TEXT format.
+  - The server is a tiny asyncio server based on the standard library.

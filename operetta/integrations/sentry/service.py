@@ -6,13 +6,25 @@ from typing import Any, Iterable, Literal
 import aiomisc
 import dishka
 from dishka.exceptions import NoFactoryError
-from sentry_sdk.client import BaseClient
-from sentry_sdk.integrations.logging import DEFAULT_LEVEL
 
-from operetta.integrations.sentry.providers import SentryServiceConfigProvider
 from operetta.service.base import Service
 
 from .config import SentryServiceConfig
+from .providers import SentryServiceConfigProvider
+
+try:
+    import sentry_sdk
+    from sentry_sdk.client import BaseClient
+    from sentry_sdk.integrations.logging import (
+        DEFAULT_LEVEL,
+        LoggingIntegration,
+        ignore_logger,
+    )
+except Exception as e:
+    raise RuntimeError(
+        "sentry-sdk is required to run SentryService. Install "
+        "with `pip install sentry-sdk` or extras `operetta[sentry]`."
+    ) from e
 
 log = logging.getLogger(__name__)
 
@@ -173,19 +185,6 @@ class SentryService(Service):
                 "SentryService enabled but no DSN provided; skipping init"
             )
             return None
-
-        # lazy import so optional dependency is not required when unused
-        try:
-            import sentry_sdk
-            from sentry_sdk.integrations.logging import (
-                LoggingIntegration,
-                ignore_logger,
-            )
-        except Exception as e:  # pragma: no cover
-            raise RuntimeError(
-                "sentry-sdk is required to run SentryService. Install "
-                "with `pip install sentry-sdk` or extras `operetta[sentry]`."
-            ) from e
 
         # logging integration levels
         context_level = _normalize_level(
