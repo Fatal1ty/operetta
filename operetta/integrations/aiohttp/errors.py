@@ -7,7 +7,7 @@ class APIError(Exception):
     message_format: str = ""
     details: Sequence[Any] = ()
 
-    def __init__(self, *args, details: Sequence[str] = ()):
+    def __init__(self, *args, details: Sequence[Any] = ()):
         super().__init__(*args)
         self.details = details or self.details
 
@@ -34,6 +34,14 @@ class InvalidJSONBodyError(ClientError):
 class InvalidQueryParamsError(ClientError):
     code = "INVALID_QUERY_PARAMS"
     message_format = "Invalid query parameters"
+
+
+class MissingRequiredQueryParamsError(ClientError):
+    code = "MISSING_REQUIRED_QUERY_PARAMS"
+    message_format = "Missing required query parameters"
+    details = [
+        {"suggestion": "Ensure all required query parameters are provided"}
+    ]
 
 
 class InvalidPathParamsError(ClientError):

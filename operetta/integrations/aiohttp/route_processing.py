@@ -16,6 +16,7 @@ from mashumaro.core.meta.helpers import (
     is_annotated,
     is_optional,
     not_none_type_arg,
+    type_name,
 )
 from mashumaro.exceptions import InvalidFieldValue, MissingField
 from openapify import (
@@ -36,6 +37,7 @@ from operetta.integrations.aiohttp.errors import (
     InvalidJSONBodyError,
     InvalidPathParamsError,
     InvalidQueryParamsError,
+    MissingRequiredQueryParamsError,
 )
 from operetta.integrations.aiohttp.request import (
     collect_exception_chain_metadata,
@@ -96,6 +98,7 @@ def process_route(route: RouteDef) -> RouteDef:
                 elif isinstance(func_arg_annotation, FromQuery):  # type: ignore
                     from_query = func_arg_annotation
                     spec = QueryParam(
+                        default=from_query.query_param.default,
                         value_type=get_args(func_arg.annotation)[0],
                         description=from_query.query_param.description,
                         deprecated=from_query.query_param.deprecated,
@@ -105,10 +108,11 @@ def process_route(route: RouteDef) -> RouteDef:
                         example=from_query.query_param.example,
                         examples=from_query.query_param.examples,
                     )
-                    if (default := func_arg.default) is Signature.empty:
-                        spec.required = True
-                    else:
-                        spec.default = default
+                    if spec.default is None and spec.required is None:
+                        if (default := func_arg.default) is Signature.empty:
+                            spec.required = True
+                        else:
+                            spec.default = default
                     query_params_info.append(
                         RequestHandlerQueryParamInfo(
                             handler_param_name=func_arg.name,
@@ -303,14 +307,37 @@ def create_query_param_getter(
     param_info: RequestHandlerQueryParamInfo,
 ) -> Callable[[aiohttp.web.Request], Any]:
     decoder = BasicDecoder(param_info.spec.value_type).decode
-    request_param_name = param_info.request_param_name
+    param_name = param_info.request_param_name
+    required = param_info.spec.required
+    param_default = param_info.spec.default
+    missing_error = MissingRequiredQueryParamsError(
+        details=[
+            {
+                "param_name": param_info.request_param_name,
+                "expected_type": type_name(
+                    param_info.spec.value_type, short=True
+                ),
+                "issue": "Missing required query parameter '{param_name}'",
+                "suggestion": (
+                    "Ensure all required query parameters are provided"
+                ),
+            }
+        ]
+    )
 
     def getter(request: aiohttp.web.Request):
         try:
-            return decoder(request.query.get(request_param_name))
+            param_value = request.query[param_name]
+        except KeyError:
+            if required:
+                raise missing_error
+            else:
+                return param_default
+        try:
+            return decoder(param_value)
         except ValueError:
             raise InvalidQueryParamsError(
-                details=[f"Invalid {request_param_name} format"]
+                details=[f"Invalid {param_name} format"]
             )
 
     return getter

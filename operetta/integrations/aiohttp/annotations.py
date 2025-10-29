@@ -39,6 +39,7 @@ else:
             self,
             name: str | None = None,
             *,
+            default: Any | None = None,
             required: bool | None = None,
             description: str | None = None,
             deprecated: bool | None = None,
@@ -49,6 +50,7 @@ else:
             examples: Mapping[str, Example | Any] = None,
         ):
             self.query_param = QueryParam(
+                default=default,
                 required=required,
                 description=description,
                 deprecated=deprecated,
