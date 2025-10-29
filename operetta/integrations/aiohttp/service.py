@@ -111,9 +111,11 @@ class AIOHTTPService(Service):
         self._docs_swagger_path = docs_swagger_path
         self._docs_redoc_path = docs_redoc_path
         self._static_endpoint_prefix = static_endpoint_prefix
-        if static_files_root is None:
-            static_files_root = Path(tempfile.mkdtemp())
-        self._static_files_root = Path(static_files_root)
+        self._static_files_root: Path | None
+        if static_files_root is not None:
+            self._static_files_root = Path(static_files_root)
+        else:
+            self._static_files_root = None
         self._docs_title = docs_title
         self._docs_servers = docs_servers
         self._docs_default_type = docs_default_type
@@ -155,7 +157,10 @@ class AIOHTTPService(Service):
             if self._static_endpoint_prefix == "/static/":
                 self._static_endpoint_prefix = cfg.static_endpoint_prefix
             if self._static_files_root is None:
-                self._static_files_root = Path(cfg.static_files_root)
+                if cfg.static_files_root is not None:
+                    self._static_files_root = Path(cfg.static_files_root)
+                else:
+                    self._static_files_root = Path(tempfile.mkdtemp())
             if self._docs_default_path == "/docs":
                 self._docs_default_path = cfg.docs_default_path
             if self._docs_swagger_path == "/docs/swagger":
@@ -258,6 +263,8 @@ class AIOHTTPService(Service):
         """Add routes and file for documentation endpoints."""
         routes = []
         html_filename = f"{doc_type}.html"
+        assert self._static_files_root
+        static_files_root = self._static_files_root
         copy_and_patch_html(
             Path(__file__).parent / f"openapi/{html_filename}",
             self._static_files_root / f"openapi/{html_filename}",
@@ -266,7 +273,7 @@ class AIOHTTPService(Service):
 
         async def docs_response(_) -> aiohttp.web.FileResponse:
             return aiohttp.web.FileResponse(
-                self._static_files_root / f"openapi/{html_filename}"
+                static_files_root / f"openapi/{html_filename}"
             )
 
         async def default_docs_redirect(
