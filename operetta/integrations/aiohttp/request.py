@@ -1,7 +1,12 @@
 import logging
 
 from mashumaro import MissingField
-from mashumaro.exceptions import InvalidFieldValue
+from mashumaro.core.meta.helpers import type_name
+from mashumaro.exceptions import (
+    InvalidFieldValue,
+    MissingDiscriminatorError,
+    SuitableVariantNotFoundError,
+)
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +39,29 @@ def collect_exception_chain_metadata(exc):
                 "issue": f"Missing required field '{e.field_name}'",
             }
             last_suggestion = f"Provide the required '{e.field_name}' field"
+            metadata.append(entry)
+            break
+        elif isinstance(e, MissingDiscriminatorError):
+            entry = {
+                "issue": f"Missing discriminator field '{e.field_name}'",
+            }
+            last_suggestion = (
+                f"Provide the required discriminator '{e.field_name}' field"
+            )
+            metadata.append(entry)
+            break
+        elif isinstance(e, SuitableVariantNotFoundError):
+            entry = {
+                "object_type": type_name(e.variants_type, short=True),
+                "issue": "Invalid discriminator value provided",
+            }
+            if e.discriminator_name:
+                entry["discriminator"] = e.discriminator_name
+            last_value = e.discriminator_value
+            last_suggestion = (
+                "Ensure the discriminator value matches one of the "
+                "expected variants"
+            )
             metadata.append(entry)
             break
         else:

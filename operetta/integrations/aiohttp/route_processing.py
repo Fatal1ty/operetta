@@ -18,7 +18,12 @@ from mashumaro.core.meta.helpers import (
     not_none_type_arg,
     type_name,
 )
-from mashumaro.exceptions import InvalidFieldValue, MissingField
+from mashumaro.exceptions import (
+    InvalidFieldValue,
+    MissingDiscriminatorError,
+    MissingField,
+    SuitableVariantNotFoundError,
+)
 from openapify import (
     Body,
     PathParam,
@@ -296,7 +301,12 @@ def create_body_getter(
             return decoder(await request.read())
         except JSONDecodeError as e:
             raise InvalidJSONBodyError(e)
-        except (InvalidFieldValue, MissingField) as e:
+        except (
+            InvalidFieldValue,
+            MissingField,
+            MissingDiscriminatorError,
+            SuitableVariantNotFoundError,
+        ) as e:
             details = collect_exception_chain_metadata(e)
             raise InvalidJSONBodyError(details=details)
 
