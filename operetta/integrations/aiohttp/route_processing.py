@@ -317,7 +317,7 @@ def create_query_param_getter(
                 "expected_type": type_name(
                     param_info.spec.value_type, short=True
                 ),
-                "issue": "Missing required query parameter '{param_name}'",
+                "issue": f"Missing required query parameter '{param_name}'",
                 "suggestion": (
                     "Ensure all required query parameters are provided"
                 ),
