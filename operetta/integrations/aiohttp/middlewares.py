@@ -38,12 +38,12 @@ async def unhandled_error_middleware(
     try:
         resp = await handler(request)
         return resp
-    except HTTPException:
-        raise
     except http_errors.APIError as e:
         return error_response(
             message=e.message, status=e.status, code=e.code, details=e.details
         )
+    except HTTPException:
+        raise
     except Exception as e:
         log.exception(e)
         return error_response(
@@ -63,26 +63,35 @@ async def ddd_errors_middleware(
         resp = await handler(request)
         return resp
     except AlreadyExistsError as e:
-        raise http_errors.DuplicateRequestError(details=e.details)
+        api_error: http_errors.APIError = http_errors.DuplicateRequestError(
+            details=e.details
+        )
     except NotFoundError as e:
-        raise http_errors.ResourceNotFoundError(details=e.details)
+        api_error = http_errors.ResourceNotFoundError(details=e.details)
     except (RelatedResourceNotFoundError, ValidationError) as e:
-        raise http_errors.UnprocessableEntityError(details=e.details)
+        api_error = http_errors.UnprocessableEntityError(details=e.details)
     except (ConflictError, InvalidOperationError) as e:
-        raise http_errors.ConflictError(details=e.details)
+        api_error = http_errors.ConflictError(details=e.details)
     except AuthenticationError as e:
-        raise http_errors.UnauthorizedError(details=e.details)
+        api_error = http_errors.UnauthorizedError(details=e.details)
     except (AuthorizationError, PermissionDeniedError) as e:
-        raise http_errors.ForbiddenError(details=e.details)
+        api_error = http_errors.ForbiddenError(details=e.details)
     except DeadlineExceededError as e:
-        raise http_errors.GatewayTimeoutError(details=e.details)
+        api_error = http_errors.GatewayTimeoutError(details=e.details)
     except (DependencyUnavailableError, SubsystemUnavailableError) as e:
-        raise http_errors.ServiceUnavailableError(details=e.details)
+        api_error = http_errors.ServiceUnavailableError(details=e.details)
     except DependencyFailureError as e:
-        raise http_errors.BadGatewayError(details=e.details)
+        api_error = http_errors.BadGatewayError(details=e.details)
     except (StorageIntegrityError, TransportIntegrityError) as e:
-        raise http_errors.ServerError(details=e.details)
+        api_error = http_errors.ServerError(details=e.details)
     except (SystemResourceLimitExceededError, DependencyThrottledError) as e:
-        raise http_errors.ServiceUnavailableError(details=e.details)
+        api_error = http_errors.ServiceUnavailableError(details=e.details)
     except InfrastructureError as e:
-        raise http_errors.ServerError(details=e.details)
+        api_error = http_errors.ServerError(details=e.details)
+
+    return error_response(
+        message=api_error.message,
+        status=api_error.status,
+        code=api_error.code,
+        details=api_error.details,
+    )

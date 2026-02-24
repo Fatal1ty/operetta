@@ -34,7 +34,7 @@ def rebuild_spec(
 ) -> None:
     if remove_path_prefix:
         remove_path_prefix = remove_path_prefix.rstrip("/")
-    spec = build_spec(  # type: ignore[assignment]
+    spec = build_spec(
         routes,
         title=title,
         version=DEFAULT_SPEC_VERSION,
