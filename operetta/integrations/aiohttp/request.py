@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from mashumaro import MissingField
 from mashumaro.core.meta.helpers import type_name
@@ -12,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 def collect_exception_chain_metadata(exc):
-    metadata = []
+    metadata: list[dict] = []
     e = exc
     last_value = None
     last_suggestion = None

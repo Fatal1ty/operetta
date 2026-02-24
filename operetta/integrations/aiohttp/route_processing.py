@@ -250,7 +250,7 @@ def _apply_openapi_schema(
     body_info: RequestHandlerBodyInfo | None,
     return_annotation: TypeAnnotation,
 ):
-    for param_info in path_params_info:  # type: ignore[assignment]
+    for param_info in path_params_info:
         request_schema(
             path_params={param_info.request_param_name: param_info.spec}
         )(wrapper)

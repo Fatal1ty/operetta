@@ -81,7 +81,9 @@ class AIOHTTPService(Service):
         routes: Iterable[RouteDef] = (),
         address: str | None = None,
         port: int | None = None,
-        middlewares: Iterable[Middleware] = (),
+        *,
+        outer_middlewares: Iterable[Middleware] = (),
+        inner_middlewares: Iterable[Middleware] = (),
         system_middlewares: Iterable[Middleware] = (
             unhandled_error_middleware,
             ddd_errors_middleware,
@@ -106,7 +108,11 @@ class AIOHTTPService(Service):
         self._routes = routes
         self._address = address
         self._port = port
-        self._middlewares = [*system_middlewares, *middlewares]
+        self._middlewares = [
+            *outer_middlewares,
+            *system_middlewares,
+            *inner_middlewares,
+        ]
         self._docs_default_path = docs_default_path
         self._docs_swagger_path = docs_swagger_path
         self._docs_redoc_path = docs_redoc_path

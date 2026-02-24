@@ -30,6 +30,7 @@ A lightweight framework for building Python applications that is not tied to a s
 - [Services and DI](#services-and-di)
 - [AIOHTTP](#aiohttp)
   - [Configuration](#configuration)
+  - [Middleware ordering](#middleware-ordering)
   - [Error handling and response format](#error-handling-and-response-format)
 - [PostgreSQL](#postgresql)
   - [Single-node PostgreSQL (asyncpg)](#single-node-postgresql-asyncpg)
@@ -383,6 +384,29 @@ app = Application(
     di_providers=[EnvAiohttpConfigProvider()],
 )
 ```
+
+### Middleware ordering
+
+AIOHTTP middlewares are applied as a stack: the first middleware in the list is the outermost.
+
+Operetta splits middlewares into 3 layers:
+
+- `outer_middlewares` — user middlewares that should be able to modify the response even when an error happens (CORS, security headers, request-id headers, tracing wrappers).
+- `system_middlewares` — built-in operetta middlewares (DDD → API errors mapping, generic error handling).
+- `inner_middlewares` — user middlewares that must be as close to the handler as possible (specialized request parsing/validation, raw exception mapping, etc.).
+
+Example:
+
+```python
+from operetta.integrations.aiohttp import AIOHTTPService
+
+service = AIOHTTPService(
+    routes=[...],
+    outer_middlewares=[cors_middleware],
+    inner_middlewares=[custom_validation_middleware],
+)
+```
+
 
 ### Error handling and response format
 
