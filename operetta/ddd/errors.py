@@ -84,6 +84,30 @@ class RelatedResourceNotFoundError(ApplicationError):
     pass
 
 
+class DependencyUnavailableError(ApplicationError):
+    """External dependency is unreachable or not ready."""
+
+    pass
+
+
+class DependencyTimeoutError(ApplicationError):
+    """External dependency did not respond within expected time."""
+
+    pass
+
+
+class DependencyFailureError(ApplicationError):
+    """External dependency responds but fails or violates its contract."""
+
+    pass
+
+
+class DependencyThrottledError(ApplicationError):
+    """An external dependency throttled the request (rate/quota)."""
+
+    pass
+
+
 # Infrastructure/technical layer
 class InfrastructureError(AppError):
     """Technical failures in external dependencies or local subsystems."""
@@ -93,18 +117,6 @@ class InfrastructureError(AppError):
 
 class DeadlineExceededError(InfrastructureError):
     """Operation exceeded its deadline or timeout (I/O, RPC, local call)."""
-
-    pass
-
-
-class DependencyUnavailableError(InfrastructureError):
-    """External dependency is unreachable or not ready."""
-
-    pass
-
-
-class DependencyFailureError(InfrastructureError):
-    """External dependency responds but fails or violates its contract."""
 
     pass
 
@@ -129,11 +141,5 @@ class TransportIntegrityError(InfrastructureError):
 
 class SystemResourceLimitExceededError(InfrastructureError):
     """A system resource limit was exceeded (disk, memory, fds, inodes)."""
-
-    pass
-
-
-class DependencyThrottledError(InfrastructureError):
-    """An external dependency throttled the request (rate/quota)."""
 
     pass
