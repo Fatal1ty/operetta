@@ -85,32 +85,32 @@ class RelatedResourceNotFoundError(ApplicationError):
 
 
 class DependencyUnavailableError(ApplicationError):
-    """External dependency is unreachable or not ready."""
+    """Dependency is unreachable or not ready."""
 
     pass
 
 
 class DependencyTimeoutError(ApplicationError):
-    """External dependency did not respond within expected time."""
+    """Dependency did not respond within expected time."""
 
     pass
 
 
 class DependencyFailureError(ApplicationError):
-    """External dependency responds but fails or violates its contract."""
+    """Dependency responds but fails or violates its contract."""
 
     pass
 
 
 class DependencyThrottledError(ApplicationError):
-    """An external dependency throttled the request (rate/quota)."""
+    """Dependency throttled the request (rate/quota)."""
 
     pass
 
 
 # Infrastructure/technical layer
 class InfrastructureError(AppError):
-    """Technical failures in external dependencies or local subsystems."""
+    """Technical failures."""
 
     pass
 
