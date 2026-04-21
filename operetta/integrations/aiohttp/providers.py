@@ -1,6 +1,7 @@
 from typing import Any, Mapping
 
 from dishka import Provider, Scope, provide
+from dishka.integrations.aiohttp import AiohttpProvider
 from mashumaro.codecs.basic import decode as basic_decode
 
 from operetta.types import ApplicationDictConfig
@@ -23,3 +24,13 @@ class AIOHTTPServiceConfigProvider(Provider):
         return basic_decode(
             self.get_section(app_dict_config), AIOHTTPServiceConfig
         )
+
+
+class AIOHTTPServiceRequestProvider(AiohttpProvider):
+    pass
+
+
+__all__ = [
+    "AIOHTTPServiceConfigProvider",
+    "AIOHTTPServiceRequestProvider",
+]

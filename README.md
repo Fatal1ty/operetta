@@ -291,6 +291,7 @@ Provided components:
 - [`AIOHTTPService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/service.py) — the main service that wraps routes, handles requests, and serves OpenAPI/docs.
 - [`AIOHTTPConfigurationService`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/service.py) — registers a config provider into DI.
 - [`AIOHTTPServiceConfigProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/providers.py) — reads `ApplicationDictConfig['api']` and decodes it into [`AIOHTTPServiceConfig`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/config.py).
+- [`AIOHTTPServiceRequestProvider`](https://github.com/Fatal1ty/operetta/blob/main/operetta/integrations/aiohttp/providers.py) — exposes `aiohttp.web.Request` in DI (request scope). Useful when you want to access request data (headers, auth, remote, etc.) inside your own DI providers/factories (e.g., authorization).
 
 Install extra:
 
@@ -306,6 +307,7 @@ from operetta.service.configuration import YAMLConfigurationService
 from operetta.integrations.aiohttp import (
     AIOHTTPService,
     AIOHTTPServiceConfigProvider,
+    AIOHTTPServiceRequestProvider,
 )
 
 app = Application(
@@ -316,8 +318,34 @@ app = Application(
         # port=9090,
         # docs_default_type="redoc",
     ),
-    di_providers=[AIOHTTPServiceConfigProvider()],
+    di_providers=[
+        AIOHTTPServiceConfigProvider(),
+        # Optional: put aiohttp.web.Request into DI (Scope.REQUEST)
+        AIOHTTPServiceRequestProvider(),
+    ],
 )
+```
+
+Using `Request` inside a DI provider (example: simple authorization context factory):
+
+```python
+from dataclasses import dataclass
+
+from aiohttp import web
+from dishka import Provider, Scope, provide
+
+
+@dataclass(frozen=True)
+class AuthContext:
+    token: str | None
+
+
+class AuthProvider(Provider):
+    scope = Scope.REQUEST
+
+    @provide
+    def get_auth_context(self, request: web.Request) -> AuthContext:
+        return AuthContext(token=request.headers.get("Authorization"))
 ```
 
 ### Configuration
