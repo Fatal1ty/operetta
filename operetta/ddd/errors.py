@@ -15,6 +15,25 @@ class AppError(Exception):
         super().__init__(*args)
         self.details = details or self.details
 
+    def __str__(self) -> str:
+        """Always returns a non-empty string for logs/printing.
+
+        Default Exception behaviour makes `str(Exception()) == ''`. Here we
+        fall back to the class name when no args were provided.
+        """
+
+        if self.args:
+            return super().__str__()
+        return self.__class__.__name__
+
+    def __repr__(self) -> str:
+        if self.args:
+            return (
+                f"{self.__class__.__name__}({super().__str__()!r}, "
+                f"details={self.details!r})"
+            )
+        return f"{self.__class__.__name__}(details={self.details!r})"
+
 
 # Domain layer
 class DomainError(AppError):
